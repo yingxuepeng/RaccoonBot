@@ -2,6 +2,7 @@ package com.raccoon.qqbot.config;
 
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.BotFactory;
+import net.mamoe.mirai.utils.BotConfiguration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,7 +20,11 @@ public class MiraiConfig {
     public Bot getMiraiBot() {
 
         Bot miraiBot = BotFactory.INSTANCE.newBot(Long.parseLong(loginQid), HexStringToByteArray(loginPwdMd5), botConfiguration -> {
+            botConfiguration.setProtocol(BotConfiguration.MiraiProtocol.ANDROID_PHONE);
+            botConfiguration.setAutoReconnectOnForceOffline(true);
+            botConfiguration.setReconnectionRetryTimes(Integer.MAX_VALUE);
         });
+
         return miraiBot;
     }
 

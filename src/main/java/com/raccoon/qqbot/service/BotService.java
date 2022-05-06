@@ -80,7 +80,6 @@ public class BotService {
         });
         // 掉线
         miraiBot.getEventChannel().subscribeAlways(BotOfflineEvent.class, event -> {
-            miraiBot.login();
         });
 
         // 申请加群

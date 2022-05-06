@@ -216,25 +216,35 @@ public class BotService {
         }
         PlainText action = (PlainText) event.getMessage().get(2);
         String muteStr = new String("干他".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
-
         String infoStr = new String("看看配额".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
-        if (!(action.getContent().contains(infoStr) || action.getContent().contains(muteStr))) {
+        String forgiveStr = new String("+1命".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+        if (!(action.getContent().contains(infoStr) || action.getContent().contains(muteStr) || action.getContent().contains(forgiveStr))) {
             return;
         }
         if (!(event.getMessage().get(3) instanceof At)) {
             return;
         }
         At target = (At) event.getMessage().get(3);
-        MemberPermission permission = event.getGroup().get(target.getTarget()).getPermission();
+        long memberId = target.getTarget();
+        MemberPermission permission = event.getGroup().get(memberId).getPermission();
         if (permission == MemberPermission.ADMINISTRATOR || permission == MemberPermission.OWNER) {
             event.getGroup().sendMessage("权限不足，小浣熊哭哭");
             return;
         }
 
         if (action.getContent().contains(muteStr)) {
-            addMuteRule(event, event.getSender().getId(), target.getTarget());
+            addMuteRule(event, event.getSender().getId(), memberId);
         } else if (action.getContent().contains(infoStr)) {
-            printMuteInfo(event, target.getTarget());
+            printMuteInfo(event, memberId);
+        } else if (action.getContent().contains(forgiveStr)) {
+            redisService.clearMsgTimeList(memberId);
+            event.getGroup().get(target.getTarget()).unmute();
+
+            ScriptResultVo info = getMemberMuteInfo(memberId);
+            MessageChainBuilder builder = new MessageChainBuilder();
+            builder.append(new At(memberId));
+            builder.append(new PlainText("你又续了一条命，当前发言次数已清零：" + info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
+            event.getGroup().sendMessage(builder.build());
         }
     }
 
@@ -254,7 +264,7 @@ public class BotService {
 
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(System.currentTimeMillis());
-        calendar.add(Calendar.MONTH, 1);
+        calendar.add(Calendar.DATE, 7);
         LocalDateTime localDateTime = calendar.getTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
         botAdminActionEntity.setExpireTime(localDateTime);
         botAdminActionEntity.setIsDel(false);
@@ -285,7 +295,13 @@ public class BotService {
 
         if (resultVo.getShouldMute()) {
             event.getSender().mute((int) (resultVo.getMuteMillis() / 1000));
-            event.getGroup().sendMessage(Image.fromId("{1FC3D44A-6F98-6E13-2025-756013B51688}.jpg"));
+
+            ScriptResultVo info = getMemberMuteInfo(memberId);
+            MessageChainBuilder builder = new MessageChainBuilder();
+            builder.append(new At(memberId));
+            builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgLimitCnt() + "，早点睡觉觉吧~\n"));
+            builder.append(Image.fromId("{1FC3D44A-6F98-6E13-2025-756013B51688}.jpg"));
+            event.getGroup().sendMessage(builder.build());
         }
     }
 

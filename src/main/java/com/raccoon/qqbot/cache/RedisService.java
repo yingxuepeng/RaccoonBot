@@ -43,4 +43,9 @@ public class RedisService {
         redisTemplate.opsForList().leftPush(key, ts + "");
         redisTemplate.expire(key, CACHE_TIME, TimeUnit.MILLISECONDS);
     }
+
+    public void clearMsgTimeList(long memberId) {
+        long ts = System.currentTimeMillis();
+        redisTemplate.delete(getMsgListKey(memberId, ts));
+    }
 }

@@ -1,7 +1,7 @@
 package com.raccoon.qqbot.config;
 
-import com.raccoon.qqbot.kotlin.BotUtils;
 import net.mamoe.mirai.Bot;
+import net.mamoe.mirai.BotFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,7 +20,8 @@ public class MiraiConfig {
     @Bean("miraiBot")
     public Bot getMiraiBot() {
 
-        Bot miraiBot = BotUtils.Instance.INSTANCE.getMiraiBot(loginQid, loginPwdMd5);
+        Bot miraiBot = BotFactory.INSTANCE.newBot(Long.parseLong(loginQid), HexStringToByteArray(loginPwdMd5), botConfiguration -> {
+        });
         return miraiBot;
     }
 
@@ -33,7 +34,7 @@ public class MiraiConfig {
         return miraiInfo;
     }
 
-    public static byte[] hexStringToByteArray(String s) {
+    public static byte[] HexStringToByteArray(String s) {
         int len = s.length();
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {

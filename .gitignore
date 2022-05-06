@@ -33,4 +33,5 @@ build/
 .vscode/
 
 ### prod config ###
+/cache/
 /src/main/resources/application-*.properties

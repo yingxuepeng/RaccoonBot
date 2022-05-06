@@ -28,7 +28,11 @@ const MAX_MSG_CNT = 80;
 function shouldMute(dataStr: string): string {
   let data: Sc1Data = JSON.parse(dataStr);
   let now = new Date().getTime();
-  let result: Result = { shouldMute: false, msgCnt: 0, msgLimitCnt: MAX_MSG_CNT - (data.actionList.length - 1) * 10 };
+  let msgLimitCnt = 999999;
+  if (data.actionList.length > 0) {
+    msgLimitCnt = MAX_MSG_CNT - (data.actionList.length - 1) * 10;
+  }
+  let result: Result = { shouldMute: false, msgCnt: 0, msgLimitCnt };
   for (let index = 0; index < data.msgTimeList.length; index++) {
     const time = Number(data.msgTimeList[index]);
     if (time + DURATION > now) {

@@ -3,7 +3,11 @@ var MAX_MSG_CNT = 80;
 function shouldMute(dataStr) {
     var data = JSON.parse(dataStr);
     var now = new Date().getTime();
-    var result = { shouldMute: false, msgCnt: 0, msgLimitCnt: MAX_MSG_CNT - (data.actionList.length - 1) * 10 };
+    var msgLimitCnt = 999999;
+    if (data.actionList.length > 0) {
+        msgLimitCnt = MAX_MSG_CNT - (data.actionList.length - 1) * 10;
+    }
+    var result = { shouldMute: false, msgCnt: 0, msgLimitCnt: msgLimitCnt };
     for (var index = 0; index < data.msgTimeList.length; index++) {
         var time = Number(data.msgTimeList[index]);
         if (time + DURATION > now) {

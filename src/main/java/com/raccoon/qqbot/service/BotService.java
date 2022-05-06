@@ -116,15 +116,15 @@ public class BotService {
         // 收到单聊消息
         miraiBot.getEventChannel().subscribeAlways(FriendMessageEvent.class, event -> {
             long memberId = Long.parseLong(event.getMessage().contentToString());
-
             ScriptResultVo info = getMemberMuteInfo(memberId);
             event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
-        });// 收到单聊消息
+        });
+
+        // 收到陌生人单聊消息
         miraiBot.getEventChannel().subscribeAlways(StrangerMessageEvent.class, event -> {
-            ScriptResultVo info = getMemberMuteInfo(event.getSender().getId());
-            if (info != null) {
-                event.getSender().sendMessage(new PlainText("你当前的配额为：" + info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
-            }
+            long memberId = Long.parseLong(event.getMessage().contentToString());
+            ScriptResultVo info = getMemberMuteInfo(memberId);
+            event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
         });
 
         miraiBot.login();

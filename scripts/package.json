@@ -4,14 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "clean": "rimraf ../src/main/resources/scripts",
+    "clean": "rimraf ./dist && rimraf ../src/main/resources/scripts",
     "prebuild": "npm run clean",
-    "build": "tsc"
+    "copy-scripts": "shx cp -R ./dist ../src/main/resources/scripts",
+    "build": "tsc && npm run copy-scripts"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "rimraf": "^3.0.2",
+    "shx": "^0.3.4",
     "typescript": "^4.6.4"
   }
 }

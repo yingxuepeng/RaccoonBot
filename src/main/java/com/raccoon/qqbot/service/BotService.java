@@ -112,25 +112,37 @@ public class BotService {
             }
         });
 
+
         // 收到单聊消息
         miraiBot.getEventChannel().subscribeAlways(FriendMessageEvent.class, event -> {
             long memberId = Long.parseLong(event.getMessage().contentToString());
 
             ScriptResultVo info = getMemberMuteInfo(memberId);
             event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
+        });// 收到单聊消息
+        miraiBot.getEventChannel().subscribeAlways(StrangerMessageEvent.class, event -> {
+            ScriptResultVo info = getMemberMuteInfo(event.getSender().getId());
+            if (info != null) {
+                event.getSender().sendMessage(new PlainText("你当前的配额为：" + info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
+            }
         });
 
         miraiBot.login();
     }
 
     private void handleJoinRequest(MemberJoinRequestEvent event) {
-        String invCode = event.getMessage();
+        String[] split = event.getMessage().trim().split("答案：");
+        if (split.length < 2) {
+            event.reject(false, "bot邀请码没查到,#开头转人工");
+            return;
+        }
+        String invCode = split[1];
         if (invCode.startsWith("#")) {
             return;
         }
         SolutionEntity solutionEntity = solutionDao.getByUuid(invCode);
         if (solutionEntity == null) {
-            event.reject(false, "[bot]邀请码没查到。如确定正确，请重新加群并以'#'开头输入原因转人工！");
+            event.reject(false, "bot邀请码没查到,#开头转人工");
             return;
         }
 

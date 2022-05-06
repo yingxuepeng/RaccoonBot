@@ -18,4 +18,9 @@ public interface BotAdminActionDao extends BotBaseMapper<BotAdminActionEntity> {
             " and status = #{status}")
     List<BotAdminActionEntity> selectByMemberScriptStatus(@Param("memberId") long memberId, @Param("scriptId") long scriptId,
                                                           @Param("status") byte status);
+
+
+    @Select("select * from bot_admin_action where status = #{status}")
+    List<BotAdminActionEntity> selectByStatus(@Param("status") byte status);
+
 }

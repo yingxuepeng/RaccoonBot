@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "strictPropertyInitialization": false,
+    "jsx": "react-native",
+    "target": "es5",
+    "module": "commonjs",
+    "lib": ["esnext"],
+    "declaration": false,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "outDir": "../src/main/resources/scripts/"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

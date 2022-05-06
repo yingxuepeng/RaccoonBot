@@ -14,8 +14,6 @@ public class MiraiConfig {
     private String loginPwdMd5;
     @Value("${com.raccoon.qqbot.mirai.groupid}")
     private String groupId;
-    @Value("${com.raccoon.qqbot.mirai.action}")
-    private String actionStr;
 
     @Bean("miraiBot")
     public Bot getMiraiBot() {
@@ -30,7 +28,6 @@ public class MiraiConfig {
         MiraiInfo miraiInfo = new MiraiInfo();
         miraiInfo.setBotId(Long.parseLong(loginQid));
         miraiInfo.setGroupId(Long.parseLong(groupId));
-        miraiInfo.setActionStr(actionStr);
         return miraiInfo;
     }
 
@@ -47,7 +44,6 @@ public class MiraiConfig {
     public static final class MiraiInfo {
         private Long botId;
         private Long groupId;
-        private String actionStr;
 
         public Long getBotId() {
             return botId;
@@ -65,12 +61,5 @@ public class MiraiConfig {
             this.groupId = groupId;
         }
 
-        public String getActionStr() {
-            return actionStr;
-        }
-
-        public void setActionStr(String actionStr) {
-            this.actionStr = actionStr;
-        }
     }
 }

@@ -5,7 +5,7 @@ function shouldMute(dataStr) {
     var now = new Date().getTime();
     var result = { shouldMute: false, msgCnt: 0, msgLimitCnt: MAX_MSG_CNT - (data.actionList.length - 1) * 10 };
     for (var index = 0; index < data.msgTimeList.length; index++) {
-        var time = data.msgTimeList[index];
+        var time = Number(data.msgTimeList[index]);
         if (time + DURATION > now) {
             result.msgCnt++;
         }

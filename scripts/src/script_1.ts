@@ -30,7 +30,7 @@ function shouldMute(dataStr: string): string {
   let now = new Date().getTime();
   let result: Result = { shouldMute: false, msgCnt: 0, msgLimitCnt: MAX_MSG_CNT - (data.actionList.length - 1) * 10 };
   for (let index = 0; index < data.msgTimeList.length; index++) {
-    const time = data.msgTimeList[index];
+    const time = Number(data.msgTimeList[index]);
     if (time + DURATION > now) {
       result.msgCnt++;
     }

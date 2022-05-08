@@ -20,7 +20,10 @@ import com.raccoon.qqbot.exception.ReturnedException;
 import com.raccoon.qqbot.exception.ServiceError;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.MemberPermission;
-import net.mamoe.mirai.event.events.*;
+import net.mamoe.mirai.event.events.GroupMessageEvent;
+import net.mamoe.mirai.event.events.MemberJoinEvent;
+import net.mamoe.mirai.event.events.MemberJoinRequestEvent;
+import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
@@ -28,7 +31,6 @@ import net.mamoe.mirai.message.data.PlainText;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
@@ -68,68 +70,7 @@ public class BotService {
     @Resource
     private BotScriptDao botScriptDao;
 
-
-    @PostConstruct
-    public void init() {
-
-        objectMapper = new ObjectMapper();
-
-        // 上线
-        miraiBot.getEventChannel().subscribeAlways(BotOnlineEvent.class, event -> {
-
-        });
-        // 掉线
-        miraiBot.getEventChannel().subscribeAlways(BotOfflineEvent.class, event -> {
-        });
-
-        // 申请加群
-        miraiBot.getEventChannel().subscribeAlways(MemberJoinRequestEvent.class, event -> {
-            if (event.getGroupId() != miraiInfo.getGroupId()) {
-                return;
-            }
-            handleJoinRequest(event);
-        });
-
-        // 用户加群
-        miraiBot.getEventChannel().subscribeAlways(MemberJoinEvent.class, event -> {
-            if (event.getGroupId() != miraiInfo.getGroupId()) {
-                return;
-            }
-            sendWelcomeMessage(event);
-        });
-
-        // 收到群聊消息
-        miraiBot.getEventChannel().subscribeAlways(GroupMessageEvent.class, event -> {
-            if (event.getGroup().getId() != miraiInfo.getGroupId()) {
-                return;
-            }
-            saveMemberMsg(event);
-            if (event.getSender().getPermission() == MemberPermission.OWNER || event.getSender().getPermission() == MemberPermission.ADMINISTRATOR) {
-                handleAdminMsg(event);
-            } else {
-                handleMemberMsg(event);
-            }
-        });
-
-
-        // 收到单聊消息
-        miraiBot.getEventChannel().subscribeAlways(FriendMessageEvent.class, event -> {
-            long memberId = Long.parseLong(event.getMessage().contentToString());
-            ScriptResultVo info = getMemberMuteInfo(memberId);
-            event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
-        });
-
-        // 收到陌生人单聊消息
-        miraiBot.getEventChannel().subscribeAlways(StrangerMessageEvent.class, event -> {
-            long memberId = Long.parseLong(event.getMessage().contentToString());
-            ScriptResultVo info = getMemberMuteInfo(memberId);
-            event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
-        });
-
-        miraiBot.login();
-    }
-
-    private void handleJoinRequest(MemberJoinRequestEvent event) {
+    public void handleJoinRequest(MemberJoinRequestEvent event) {
         String[] split = event.getMessage().trim().split("答案：");
         if (split.length < 2) {
             event.reject(false, "bot邀请码没查到,#开头转人工");
@@ -158,7 +99,7 @@ public class BotService {
         }
     }
 
-    private void sendWelcomeMessage(MemberJoinEvent event) {
+    public void sendWelcomeMessage(MemberJoinEvent event) {
         SolutionEntity solutionEntity = getNewMemberSolutionEntity(event.getMember().getId());
         String title = getMemberTitle(0);
         if (solutionEntity != null) {
@@ -199,7 +140,7 @@ public class BotService {
         return "关系户";
     }
 
-    private void handleAdminMsg(GroupMessageEvent event) {
+    public void handleAdminMsg(GroupMessageEvent event) {
         if (event.getMessage().size() < 4) {
             return;
         }
@@ -259,7 +200,7 @@ public class BotService {
         botAdminActionEntity.setMemberId(memberId);
         botAdminActionEntity.setScriptId(1L);
         botAdminActionEntity.setStatus(BotAdminActionConsts.STATUS_NORMAL);
-        botAdminActionEntity.setType(BotAdminActionConsts.TYPE_LIMIT);
+        botAdminActionEntity.setType(BotAdminActionConsts.TYPE_QUOTA);
 
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(System.currentTimeMillis());
@@ -280,7 +221,7 @@ public class BotService {
         event.getGroup().sendMessage(builder.build());
     }
 
-    private void saveMemberMsg(GroupMessageEvent event) {
+    public void saveMemberMsg(GroupMessageEvent event) {
         long memberId = event.getSender().getId();
         redisService.putMsgTime(memberId);
         List<Long> memberMsgList = redisService.getMemberMsgTimeList(memberId);
@@ -288,7 +229,7 @@ public class BotService {
         }
     }
 
-    private void handleMemberMsg(GroupMessageEvent event) {
+    public void handleMemberMsg(GroupMessageEvent event) {
         long memberId = event.getSender().getId();
         ScriptResultVo resultVo = getMemberMuteInfo(memberId);
 
@@ -302,6 +243,18 @@ public class BotService {
             builder.append(Image.fromId("{1FC3D44A-6F98-6E13-2025-756013B51688}.jpg"));
             event.getGroup().sendMessage(builder.build());
         }
+    }
+
+    public void showMemberQuota(MessageEvent event) {
+        long memberId = Long.parseLong(event.getMessage().contentToString());
+        ScriptResultVo info = getMemberMuteInfo(memberId);
+        event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
+    }
+
+    public void showMyQuota(MessageEvent event) {
+        long memberId = event.getSender().getId();
+        ScriptResultVo info = getMemberMuteInfo(memberId);
+        event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
     }
 
     private ScriptResultVo getMemberMuteInfo(long memberId) {

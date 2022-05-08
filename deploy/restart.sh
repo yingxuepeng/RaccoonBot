@@ -1,6 +1,4 @@
-#
-
-#/target/qqbot-2.0.0-SNAPSHOT.jar
+#!/bin/sh
 cd /home/raccoon_bot/
 FILE=/home/raccoon_bot/pid
 if test -f "$FILE"; then

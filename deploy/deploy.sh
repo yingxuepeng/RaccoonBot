@@ -1,5 +1,4 @@
-#
-
+#!/bin/sh
 #/target/qqbot-2.0.0-SNAPSHOT.jar
 
 scp ../target/qqbot-2.0.0-SNAPSHOT.jar ubuntu@106.53.108.169:/home/raccoon_bot/

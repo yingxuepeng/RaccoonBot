@@ -18,7 +18,7 @@ public class ScheduleService {
     @Autowired
     private BotAdminActionDao botAdminActionDao;
 
-    @Scheduled(cron = "0/5 * * * * *")
+    @Scheduled(cron = "0 */10 * * * *")
     public void expireAdminAction() {
         LocalDateTime now = new Date(System.currentTimeMillis()).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
         List<BotAdminActionEntity> actionEntities = botAdminActionDao.selectByStatus(BotAdminActionConsts.STATUS_NORMAL);

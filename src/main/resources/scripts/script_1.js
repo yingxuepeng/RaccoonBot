@@ -1,16 +1,14 @@
 var DURATION = 86400 * 1000;
-var MAX_MSG_CNT = 80;
+var MAX_MSG_CNT = 300;
 function shouldMute(dataStr) {
     var data = JSON.parse(dataStr);
     var now = new Date();
     var nowTime = now.getTime();
     var today = new Date();
-    today.setFullYear(now.getFullYear());
-    today.setMonth(now.getMonth());
-    today.setDate(now.getDate());
-    var msgLimitCnt = 999999;
+    today.setHours(0, 0, 0, 0);
+    var msgLimitCnt = MAX_MSG_CNT;
     if (data.actionList.length > 0) {
-        msgLimitCnt = MAX_MSG_CNT - (data.actionList.length - 1) * 10;
+        msgLimitCnt -= data.actionList.length * 10;
     }
     var result = { shouldMute: false, msgCnt: 0, msgLimitCnt: msgLimitCnt };
     for (var index = 0; index < data.msgTimeList.length; index++) {

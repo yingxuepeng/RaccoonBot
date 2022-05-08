@@ -24,19 +24,17 @@ interface Result {
   msgLimitCnt: number;
 }
 const DURATION = 86400 * 1000;
-const MAX_MSG_CNT = 80;
+const MAX_MSG_CNT = 300;
 function shouldMute(dataStr: string): string {
   let data: Sc1Data = JSON.parse(dataStr);
   let now = new Date();
   let nowTime = now.getTime();
   var today = new Date();
-  today.setFullYear(now.getFullYear());
-  today.setMonth(now.getMonth());
-  today.setDate(now.getDate());
+  today.setHours(0, 0, 0, 0);
 
-  let msgLimitCnt = 999999;
+  let msgLimitCnt = MAX_MSG_CNT;
   if (data.actionList.length > 0) {
-    msgLimitCnt = MAX_MSG_CNT - (data.actionList.length - 1) * 10;
+    msgLimitCnt -= data.actionList.length * 10;
   }
   let result: Result = { shouldMute: false, msgCnt: 0, msgLimitCnt };
   for (let index = 0; index < data.msgTimeList.length; index++) {

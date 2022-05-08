@@ -31,12 +31,14 @@ public class UserAction {
             return null;
         }
         // third is target
-        At target = null;
+        Long targetId = null;
+
         if (event.getMessage().size() > 3 && (event.getMessage().get(3) instanceof At)) {
             // 未指定，则为自己
-            target = (At) event.getMessage().get(3);
+            At target = (At) event.getMessage().get(3);
+            targetId = target.getTarget();
         } else {
-            target = me;
+            targetId = event.getSender().getId();
         }
 
         // action
@@ -80,9 +82,9 @@ public class UserAction {
         }
         userAction.type = type;
         userAction.senderId = event.getSender().getId();
-        userAction.targetId = target.getTarget();
+        userAction.targetId = targetId;
         userAction.senderPermission = GetPermission(event.getSender());
-        userAction.targetPermission = GetPermission(event.getGroup().get(target.getTarget()));
+        userAction.targetPermission = GetPermission(event.getGroup().get(targetId));
         userAction.actionStr = actionStr;
 
         return userAction;

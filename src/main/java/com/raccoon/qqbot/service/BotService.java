@@ -179,7 +179,7 @@ public class BotService {
         QuotaShowAction.Stat stat = userAction.getStat(actionEntityList);
         final String cHeart = "\u2764";
         final String cBomb = "\uD83D\uDCA3";
-        String quotaSumStr = "增减：";
+        String quotaSumStr = "加减：";
         if (stat.getHeartCnt() > stat.getBombCnt()) {
             for (int i = 0; i < stat.getHeartCnt() - stat.getBombCnt(); i++) {
                 quotaSumStr += cHeart;
@@ -192,7 +192,7 @@ public class BotService {
             quotaSumStr += "无";
         }
 
-        String quotaDetailStr = cHeart + "x" + stat.getHeartCnt() + " , " + cBomb + "x" + stat.getBombCnt();
+        String quotaDetailStr ="详情："+ cHeart + "x" + stat.getHeartCnt() + " , " + cBomb + "x" + stat.getBombCnt();
         MessageChainBuilder builder = new MessageChainBuilder();
         builder.append(new At(userAction.getTargetId()));
         builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgQuota() + "\n"));

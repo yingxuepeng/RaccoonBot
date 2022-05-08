@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raccoon.qqbot.cache.RedisService;
 import com.raccoon.qqbot.config.MiraiConfig;
 import com.raccoon.qqbot.data.ScriptResultVo;
+import com.raccoon.qqbot.data.action.UserAction;
+import com.raccoon.qqbot.data.action.UserActionConsts;
 import com.raccoon.qqbot.db.consts.BotAdminActionConsts;
 import com.raccoon.qqbot.db.dao.BotAdminActionDao;
 import com.raccoon.qqbot.db.dao.BotScriptDao;
@@ -19,7 +21,7 @@ import com.raccoon.qqbot.db.entity.SolutionEntity;
 import com.raccoon.qqbot.exception.ReturnedException;
 import com.raccoon.qqbot.exception.ServiceError;
 import net.mamoe.mirai.Bot;
-import net.mamoe.mirai.contact.MemberPermission;
+import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.event.events.MemberJoinEvent;
 import net.mamoe.mirai.event.events.MemberJoinRequestEvent;
@@ -30,7 +32,9 @@ import net.mamoe.mirai.message.data.MessageChainBuilder;
 import net.mamoe.mirai.message.data.PlainText;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
@@ -38,7 +42,6 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Calendar;
@@ -69,6 +72,11 @@ public class BotService {
     private BotUsedInvcodeDao botUsedInvcodeDao;
     @Resource
     private BotScriptDao botScriptDao;
+
+    @PostConstruct
+    private void init() {
+        objectMapper = new ObjectMapper();
+    }
 
     public void handleJoinRequest(MemberJoinRequestEvent event) {
         String[] split = event.getMessage().trim().split("答案：");
@@ -140,85 +148,149 @@ public class BotService {
         return "关系户";
     }
 
-    public void handleAdminMsg(GroupMessageEvent event) {
-        if (event.getMessage().size() < 4) {
-            return;
-        }
-        if (!(event.getMessage().get(1) instanceof At)) {
-            return;
-        }
-        At me = (At) event.getMessage().get(1);
-        if (me.getTarget() != miraiInfo.getBotId()) {
-            return;
-        }
-        if (!(event.getMessage().get(2) instanceof PlainText)) {
-            return;
-        }
-        PlainText action = (PlainText) event.getMessage().get(2);
-        String muteStr = new String("干他".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
-        String infoStr = new String("看看配额".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
-        String forgiveStr = new String("+1命".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
-        if (!(action.getContent().contains(infoStr) || action.getContent().contains(muteStr) || action.getContent().contains(forgiveStr))) {
-            return;
-        }
-        if (!(event.getMessage().get(3) instanceof At)) {
-            return;
-        }
-        At target = (At) event.getMessage().get(3);
-        long memberId = target.getTarget();
-        MemberPermission permission = event.getGroup().get(memberId).getPermission();
-        if (permission == MemberPermission.ADMINISTRATOR || permission == MemberPermission.OWNER) {
-            event.getGroup().sendMessage("权限不足，小浣熊哭哭");
-            return;
-        }
 
-        if (action.getContent().contains(muteStr)) {
-            addMuteRule(event, event.getSender().getId(), memberId);
-        } else if (action.getContent().contains(infoStr)) {
-            printMuteInfo(event, memberId);
-        } else if (action.getContent().contains(forgiveStr)) {
-            redisService.clearMsgTimeList(memberId);
-            event.getGroup().get(target.getTarget()).unmute();
-
-            ScriptResultVo info = getMemberMuteInfo(memberId);
-            MessageChainBuilder builder = new MessageChainBuilder();
-            builder.append(new At(memberId));
-            builder.append(new PlainText("你又续了一条命，当前发言次数已清零：" + info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
-            event.getGroup().sendMessage(builder.build());
-        }
+    public void sendNoPermissionMessage(Group group) {
+        group.sendMessage("~权限不足，小浣熊哭哭~");
     }
 
-    private void addMuteRule(GroupMessageEvent event, long adminId, long memberId) {
-        BotAdminActionEntity botAdminActionEntity = botAdminActionDao.selectByAdminUserStatus(adminId, memberId, BotAdminActionConsts.STATUS_NORMAL);
-        if (botAdminActionEntity != null) {
-            event.getGroup().sendMessage("~已经在干了，不能重复干~");
+    public void changeQuota(GroupMessageEvent event, UserAction userAction) {
+        // 无法禁言管理员
+        if (!userAction.getTargetPermission().lessThan(UserActionConsts.Permission.ADMINISTRATOR)) {
+            sendNoPermissionMessage(event.getGroup());
             return;
         }
+        BotAdminActionEntity botAdminActionEntity = botAdminActionDao.selectByAdminMemberStatus(userAction.getSenderId(), userAction.getTargetId(),
+                BotAdminActionConsts.STATUS_NORMAL, BotAdminActionConsts.TYPE_QUOTA);
+        // quota step
 
-        botAdminActionEntity = new BotAdminActionEntity();
-        botAdminActionEntity.setAdminId(adminId);
-        botAdminActionEntity.setMemberId(memberId);
-        botAdminActionEntity.setScriptId(1L);
-        botAdminActionEntity.setStatus(BotAdminActionConsts.STATUS_NORMAL);
-        botAdminActionEntity.setType(BotAdminActionConsts.TYPE_QUOTA);
+        int quotaStep = 0;
+        if (userAction.getSenderPermission() == UserActionConsts.Permission.CODING_EMPEROR) {
+            quotaStep = 3;
+        } else if (userAction.getSenderPermission() == UserActionConsts.Permission.ADMINISTRATOR
+                || userAction.getSenderPermission() == UserActionConsts.Permission.OWNER) {
+            quotaStep = 6;
+        } else {
+            throw new ReturnedException(ServiceError.CODING_BRANCH_NOT_COVERAGE);
+        }
+        //  quota change
+        int deltaQuotaCnt = StringUtils.countOccurrencesOf(userAction.getActionStr(), userAction.getType().getKeyword());
+        if (userAction.getType() == UserActionConsts.Type.QUOTA_DECREASE) {
+            deltaQuotaCnt = -deltaQuotaCnt;
+        }
+        int curQuotaCnt = 0;
+        boolean isUpdate = true;
+        if (botAdminActionEntity == null) {
+            isUpdate = false;
+            botAdminActionEntity = botAdminActionDao.createEntity(userAction.getSenderId(), userAction.getTargetId(), BotAdminActionConsts.TYPE_QUOTA);
 
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(System.currentTimeMillis());
-        calendar.add(Calendar.DATE, 7);
-        LocalDateTime localDateTime = calendar.getTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-        botAdminActionEntity.setExpireTime(localDateTime);
-        botAdminActionEntity.setIsDel(false);
-        botAdminActionDao.insert(botAdminActionEntity);
-        event.getGroup().sendMessage("~干干干，干起来，都可以干~");
-        printMuteInfo(event, memberId);
+            // expire time
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(System.currentTimeMillis());
+            // 默认2个月
+            calendar.add(Calendar.MONTH, 2);
+            LocalDateTime localDateTime = calendar.getTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            botAdminActionEntity.setExpireTime(localDateTime);
+
+        } else {
+            curQuotaCnt += botAdminActionEntity.getQuotaCnt();
+        }
+        botAdminActionEntity.setQuotaStep(quotaStep);
+
+        final int minQuota = -5;
+        final int maxQuota = 10;
+        curQuotaCnt = Math.min(Math.max(minQuota, curQuotaCnt + deltaQuotaCnt), maxQuota);
+        String hintStr = "";
+        if (deltaQuotaCnt > 0) {
+            hintStr = "干干干~都可以干！";
+        } else {
+            hintStr = "夸夸夸~都可以夸！";
+        }
+        if (isUpdate) {
+            if (curQuotaCnt == botAdminActionEntity.getQuotaCnt()) {
+                if (curQuotaCnt == minQuota) {
+                    event.getGroup().sendMessage("干到底了，真得干不动了~");
+                } else if (curQuotaCnt == maxQuota) {
+                    event.getGroup().sendMessage("夸上天了，真得夸不动了~");
+                }
+                return;
+            }
+            botAdminActionEntity.setQuotaCnt(curQuotaCnt);
+            botAdminActionDao.updateById(botAdminActionEntity);
+        } else {
+            botAdminActionEntity.setQuotaCnt(curQuotaCnt);
+            botAdminActionDao.insert(botAdminActionEntity);
+        }
+        sendMuteInfo(event.getGroup(), hintStr, userAction.getTargetId());
     }
 
-    private void printMuteInfo(GroupMessageEvent event, long memberId) {
+    public void addExtraLife(GroupMessageEvent event, UserAction userAction) {
+        if (!userAction.getTargetPermission().lessThan(UserActionConsts.Permission.ADMINISTRATOR)) {
+            sendNoPermissionMessage(event.getGroup());
+            return;
+        }
+        BotAdminActionEntity botAdminActionEntity = botAdminActionDao.selectByAdminMemberStatus(userAction.getSenderId(), userAction.getTargetId(),
+                BotAdminActionConsts.STATUS_NORMAL, BotAdminActionConsts.TYPE_QUOTA_EXTRA);
+        // quota step
+
+        int quotaStep = 0;
+        if (userAction.getSenderPermission() == UserActionConsts.Permission.CODING_EMPEROR) {
+            quotaStep = 20;
+        } else if (userAction.getSenderPermission() == UserActionConsts.Permission.ADMINISTRATOR
+                || userAction.getSenderPermission() == UserActionConsts.Permission.OWNER) {
+            quotaStep = 40;
+        } else {
+            throw new ReturnedException(ServiceError.CODING_BRANCH_NOT_COVERAGE);
+        }
+        //  quota change
+        int deltaQuotaCnt = StringUtils.countOccurrencesOf(userAction.getActionStr(), userAction.getType().getKeyword());
+
+        int curQuotaCnt = 0;
+        boolean isUpdate = true;
+        if (botAdminActionEntity == null) {
+            isUpdate = false;
+            botAdminActionEntity = botAdminActionDao.createEntity(userAction.getSenderId(), userAction.getTargetId(), BotAdminActionConsts.TYPE_QUOTA_EXTRA);
+
+            // expire time
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(System.currentTimeMillis());
+            calendar.add(Calendar.DATE, 1);
+            LocalDateTime localDateTime = calendar.getTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            botAdminActionEntity.setExpireTime(localDateTime);
+        } else {
+            curQuotaCnt += botAdminActionEntity.getQuotaCnt();
+        }
+        botAdminActionEntity.setQuotaStep(quotaStep);
+
+        final int maxQuota = 5;
+        curQuotaCnt = Math.min((curQuotaCnt + deltaQuotaCnt), maxQuota);
+        String hintStr = "续续续~又续了命！";
+
+
+        if (isUpdate) {
+            if (curQuotaCnt == botAdminActionEntity.getQuotaCnt()) {
+                if (curQuotaCnt == maxQuota) {
+                    event.getGroup().sendMessage("续到头了，真得续不动了~");
+                }
+                return;
+            }
+            botAdminActionEntity.setQuotaCnt(curQuotaCnt);
+            botAdminActionDao.updateById(botAdminActionEntity);
+        } else {
+            botAdminActionEntity.setQuotaCnt(curQuotaCnt);
+            botAdminActionDao.insert(botAdminActionEntity);
+        }
+        sendMuteInfo(event.getGroup(), hintStr, userAction.getTargetId());
+    }
+
+    private void sendMuteInfo(Group group, String prefixStr, long memberId) {
         ScriptResultVo info = getMemberMuteInfo(memberId);
         MessageChainBuilder builder = new MessageChainBuilder();
+        if (prefixStr != null) {
+            builder.append(new PlainText(prefixStr));
+        }
         builder.append(new At(memberId));
-        builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
-        event.getGroup().sendMessage(builder.build());
+        builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgQuota()));
+        group.sendMessage(builder.build());
     }
 
     public void saveMemberMsg(GroupMessageEvent event) {
@@ -239,7 +311,7 @@ public class BotService {
             ScriptResultVo info = getMemberMuteInfo(memberId);
             MessageChainBuilder builder = new MessageChainBuilder();
             builder.append(new At(memberId));
-            builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgLimitCnt() + "，早点睡觉觉吧~\n"));
+            builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgQuota() + "，早点睡觉觉吧~\n"));
             builder.append(Image.fromId("{1FC3D44A-6F98-6E13-2025-756013B51688}.jpg"));
             event.getGroup().sendMessage(builder.build());
         }
@@ -248,13 +320,13 @@ public class BotService {
     public void showMemberQuota(MessageEvent event) {
         long memberId = Long.parseLong(event.getMessage().contentToString());
         ScriptResultVo info = getMemberMuteInfo(memberId);
-        event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
+        event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgQuota()));
     }
 
     public void showMyQuota(MessageEvent event) {
         long memberId = event.getSender().getId();
         ScriptResultVo info = getMemberMuteInfo(memberId);
-        event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgLimitCnt()));
+        event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgQuota()));
     }
 
     private ScriptResultVo getMemberMuteInfo(long memberId) {

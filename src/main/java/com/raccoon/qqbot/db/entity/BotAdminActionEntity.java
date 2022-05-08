@@ -12,7 +12,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author pyx
- * @since 2022-05-06
+ * @since 2022-05-08
  */
 @TableName("bot_admin_action")
 public class BotAdminActionEntity implements Serializable {
@@ -31,6 +31,10 @@ public class BotAdminActionEntity implements Serializable {
     private Byte status;
 
     private Byte type;
+
+    private Integer quotaCnt;
+
+    private Integer quotaStep;
 
     private LocalDateTime createTime;
 
@@ -80,6 +84,20 @@ public class BotAdminActionEntity implements Serializable {
     public void setType(Byte type) {
         this.type = type;
     }
+    public Integer getQuotaCnt() {
+        return quotaCnt;
+    }
+
+    public void setQuotaCnt(Integer quotaCnt) {
+        this.quotaCnt = quotaCnt;
+    }
+    public Integer getQuotaStep() {
+        return quotaStep;
+    }
+
+    public void setQuotaStep(Integer quotaStep) {
+        this.quotaStep = quotaStep;
+    }
     public LocalDateTime getCreateTime() {
         return createTime;
     }
@@ -111,6 +129,8 @@ public class BotAdminActionEntity implements Serializable {
             ", scriptId=" + scriptId +
             ", status=" + status +
             ", type=" + type +
+            ", quotaCnt=" + quotaCnt +
+            ", quotaStep=" + quotaStep +
             ", createTime=" + createTime +
             ", expireTime=" + expireTime +
             ", isDel=" + isDel +

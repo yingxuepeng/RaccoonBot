@@ -11,6 +11,8 @@ interface AdminAction {
   adminId: number;
   memberId: number;
   type: number;
+  quotaCnt: number;
+  quotaStep: number;
 }
 interface Sc1Data {
   msgTimeList: number[];
@@ -21,29 +23,26 @@ interface Result {
   shouldMute: boolean;
   muteMillis?: number;
   msgCnt: number;
-  msgLimitCnt: number;
+  msgQuota: number;
 }
 const DURATION = 86400 * 1000;
-const MAX_MSG_CNT = 300;
+const BASE_QUOTA = 150;
 function shouldMute(dataStr: string): string {
   let data: Sc1Data = JSON.parse(dataStr);
-  let now = new Date();
-  let nowTime = now.getTime();
-  var today = new Date();
-  today.setHours(0, 0, 0, 0);
 
-  let msgLimitCnt = MAX_MSG_CNT;
-  if (data.actionList.length > 0) {
-    msgLimitCnt -= data.actionList.length * 10;
+  // change quota
+  let msgQuota = BASE_QUOTA;
+  for (let index = 0; index < data.actionList.length; index++) {
+    const action = data.actionList[index];
+    msgQuota += action.quotaCnt * msgQuota;
   }
-  let result: Result = { shouldMute: false, msgCnt: 0, msgLimitCnt };
-  for (let index = 0; index < data.msgTimeList.length; index++) {
-    const time = Number(data.msgTimeList[index]);
-    if (time + DURATION > nowTime) {
-      result.msgCnt++;
-    }
-  }
-  if (result.msgCnt > result.msgLimitCnt) {
+  let result: Result = { shouldMute: false, msgCnt: data.msgTimeList.length, msgQuota };
+
+  if (result.msgCnt >= result.msgQuota) {
+    let now = new Date();
+    let nowTime = now.getTime();
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
     let dayMillis = 86400 * 1000;
     result.muteMillis = dayMillis - (nowTime - today.getTime());
     result.shouldMute = true;

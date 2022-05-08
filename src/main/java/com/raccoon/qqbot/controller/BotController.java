@@ -1,10 +1,9 @@
 package com.raccoon.qqbot.controller;
 
 import com.raccoon.qqbot.config.MiraiConfig;
-import com.raccoon.qqbot.data.action.UserActionVo;
+import com.raccoon.qqbot.data.action.UserAction;
 import com.raccoon.qqbot.service.BotService;
 import net.mamoe.mirai.Bot;
-import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.event.events.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -59,42 +58,38 @@ public class BotController {
             if (event.getGroup().getId() != miraiInfo.getGroupId()) {
                 return;
             }
-            String title = event.getSender().getSpecialTitle();
-            System.out.println(title);
-//            if (event.getMessage())
             // 获取action
-            UserActionVo userActionVo = UserActionVo.From(event, miraiInfo);
-            if (userActionVo == null) {
+            UserAction userAction = UserAction.From(event, miraiInfo);
+            if (userAction == null) {
                 botService.saveMemberMsg(event);
+                botService.handleMemberMsg(event);
                 return;
             }
             // 权限判断
-            if (!userActionVo.getType().hasPermission(event.getSender())) {
-                sendNoPermissionMessage(event.getGroup());
+            if (!userAction.getType().hasPermission(event.getSender())) {
+                botService.sendNoPermissionMessage(event.getGroup());
                 return;
             }
 
             // 根据type调用不同service func
-            switch (userActionVo.getType()) {
+            switch (userAction.getType()) {
                 case QUOTA_SHOW:
+                    botService.showMemberQuota(event);
                     break;
                 case QUOTA_INCREASE:
-                    break;
                 case QUOTA_DECREASE:
+                    botService.changeQuota(event, userAction);
                     break;
+                case QUOTA_EXTRALIFE_ADD:
+                    botService.addExtraLife(event, userAction);
                 default:
                     break;
-
             }
         });
-
 
         // 收到单聊消息
         miraiBot.getEventChannel().subscribeAlways(FriendMessageEvent.class, event -> {
             botService.showMemberQuota(event);
-//            String s = event.getMessage().contentToString();
-//            if (s.contains("\uD83D\uDC51"))
-//                System.out.println(s);
         });
 
         // 收到陌生人单聊消息
@@ -103,10 +98,5 @@ public class BotController {
         });
 
         miraiBot.login();
-    }
-
-
-    private void sendNoPermissionMessage(Group group) {
-        group.sendMessage("~权限不足，小浣熊哭哭~");
     }
 }

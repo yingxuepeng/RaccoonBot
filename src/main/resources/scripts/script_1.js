@@ -1,23 +1,19 @@
 var DURATION = 86400 * 1000;
-var MAX_MSG_CNT = 300;
+var BASE_QUOTA = 150;
 function shouldMute(dataStr) {
     var data = JSON.parse(dataStr);
-    var now = new Date();
-    var nowTime = now.getTime();
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
-    var msgLimitCnt = MAX_MSG_CNT;
-    if (data.actionList.length > 0) {
-        msgLimitCnt -= data.actionList.length * 10;
+    // change quota
+    var msgQuota = BASE_QUOTA;
+    for (var index = 0; index < data.actionList.length; index++) {
+        var action = data.actionList[index];
+        msgQuota += action.quotaCnt * msgQuota;
     }
-    var result = { shouldMute: false, msgCnt: 0, msgLimitCnt: msgLimitCnt };
-    for (var index = 0; index < data.msgTimeList.length; index++) {
-        var time = Number(data.msgTimeList[index]);
-        if (time + DURATION > nowTime) {
-            result.msgCnt++;
-        }
-    }
-    if (result.msgCnt > result.msgLimitCnt) {
+    var result = { shouldMute: false, msgCnt: data.msgTimeList.length, msgQuota: msgQuota };
+    if (result.msgCnt >= result.msgQuota) {
+        var now = new Date();
+        var nowTime = now.getTime();
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
         var dayMillis = 86400 * 1000;
         result.muteMillis = dayMillis - (nowTime - today.getTime());
         result.shouldMute = true;

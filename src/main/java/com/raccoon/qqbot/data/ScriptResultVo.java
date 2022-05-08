@@ -5,7 +5,7 @@ public class ScriptResultVo {
     private Long muteMillis;
 
     private int msgCnt;
-    private int msgLimitCnt;
+    private int msgQuota;
 
     public Boolean getShouldMute() {
         return shouldMute;
@@ -31,11 +31,11 @@ public class ScriptResultVo {
         this.msgCnt = msgCnt;
     }
 
-    public int getMsgLimitCnt() {
-        return msgLimitCnt;
+    public int getMsgQuota() {
+        return msgQuota;
     }
 
-    public void setMsgLimitCnt(int msgLimitCnt) {
-        this.msgLimitCnt = msgLimitCnt;
+    public void setMsgQuota(int msgQuota) {
+        this.msgQuota = msgQuota;
     }
 }

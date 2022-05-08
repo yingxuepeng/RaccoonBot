@@ -12,7 +12,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author pyx
- * @since 2022-05-06
+ * @since 2022-05-08
  */
 @TableName("bot_script")
 public class BotScriptEntity implements Serializable {

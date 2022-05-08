@@ -5,8 +5,10 @@ CREATE TABLE `bot_admin_action` (
   `script_id` bigint(20) unsigned NOT NULL,
   `status` tinyint(4) NOT NULL,
   `type` tinyint(4) unsigned NOT NULL,
+  `quota_cnt` int(11) DEFAULT NULL,
+  `quota_step` int(11) DEFAULT NULL,
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `expire_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `expire_time` timestamp NULL DEFAULT NULL,
   `is_del` bit(1) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`)

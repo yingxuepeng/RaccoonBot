@@ -13,6 +13,6 @@ public class QuotaExtraLifeAction extends UserAction {
     }
 
     public int getStep() {
-        return 10;
+        return 30;
     }
 }

@@ -3,6 +3,7 @@ package com.raccoon.qqbot.controller;
 import com.raccoon.qqbot.config.MiraiConfig;
 import com.raccoon.qqbot.data.action.QuotaChangeAction;
 import com.raccoon.qqbot.data.action.QuotaExtraLifeAction;
+import com.raccoon.qqbot.data.action.QuotaShowAction;
 import com.raccoon.qqbot.data.action.UserAction;
 import com.raccoon.qqbot.service.BotService;
 import net.mamoe.mirai.Bot;
@@ -76,7 +77,7 @@ public class BotController {
             // 根据type调用不同service func
             switch (userAction.getType()) {
                 case QUOTA_SHOW:
-                    botService.showMemberQuota(event);
+                    botService.showQuota(event, (QuotaShowAction) userAction);
                     break;
                 case QUOTA_INCREASE:
                 case QUOTA_DECREASE:

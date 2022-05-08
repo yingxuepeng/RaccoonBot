@@ -9,6 +9,7 @@ import com.raccoon.qqbot.config.MiraiConfig;
 import com.raccoon.qqbot.data.ScriptResultVo;
 import com.raccoon.qqbot.data.action.QuotaChangeAction;
 import com.raccoon.qqbot.data.action.QuotaExtraLifeAction;
+import com.raccoon.qqbot.data.action.QuotaShowAction;
 import com.raccoon.qqbot.data.action.UserAction;
 import com.raccoon.qqbot.db.consts.BotAdminActionConsts;
 import com.raccoon.qqbot.db.dao.BotAdminActionDao;
@@ -155,6 +156,51 @@ public class BotService {
         group.sendMessage("~权限不足，小浣熊哭哭~");
     }
 
+
+    public void showMemberQuota(MessageEvent event) {
+        long memberId = Long.parseLong(event.getMessage().contentToString());
+        ScriptResultVo info = getMemberMuteInfo(memberId);
+        event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgQuota()));
+    }
+
+    public void showMyQuota(MessageEvent event) {
+        long memberId = event.getSender().getId();
+        ScriptResultVo info = getMemberMuteInfo(memberId);
+        event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgQuota()));
+    }
+
+    public void showQuota(GroupMessageEvent event, QuotaShowAction userAction) {
+        // 码皇以上可以查看别人quota
+        if (userAction.getSenderId() != userAction.getTargetId() && userAction.getSenderPermission().lessThan(UserAction.Permission.CODING_EMPEROR)) {
+            return;
+        }
+        ScriptResultVo info = getMemberMuteInfo(userAction.getTargetId());
+        List<BotAdminActionEntity> actionEntityList = botAdminActionDao.selectByMemberScriptStatus(userAction.getTargetId(), 1L, BotAdminActionConsts.STATUS_NORMAL);
+        QuotaShowAction.Stat stat = userAction.getStat(actionEntityList);
+        final String cHeart = "\u2764";
+        final String cBomb = "\uD83D\uDCA3";
+        String quotaSumStr = "增减：";
+        if (stat.getHeartCnt() > stat.getBombCnt()) {
+            for (int i = 0; i < stat.getHeartCnt() - stat.getBombCnt(); i++) {
+                quotaSumStr += cHeart;
+            }
+        } else if (stat.getHeartCnt() < stat.getBombCnt()) {
+            for (int i = 0; i < stat.getBombCnt() - stat.getHeartCnt(); i++) {
+                quotaSumStr += cBomb;
+            }
+        } else {
+            quotaSumStr += "无";
+        }
+
+        String quotaDetailStr = cHeart + "x" + stat.getHeartCnt() + " , " + cBomb + "x" + stat.getBombCnt();
+        MessageChainBuilder builder = new MessageChainBuilder();
+        builder.append(new At(userAction.getTargetId()));
+        builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgQuota() + "\n"));
+        builder.append(new PlainText(quotaSumStr + "\n"));
+        builder.append(new PlainText(quotaDetailStr + "\n"));
+        event.getGroup().sendMessage(builder.build());
+    }
+
     public void changeQuota(GroupMessageEvent event, QuotaChangeAction userAction) {
         // 无法禁言管理员
         if (!userAction.getTargetPermission().lessThan(UserAction.Permission.ADMINISTRATOR)) {
@@ -164,7 +210,6 @@ public class BotService {
         BotAdminActionEntity botAdminActionEntity = botAdminActionDao.selectByAdminMemberStatus(userAction.getSenderId(), userAction.getTargetId(),
                 BotAdminActionConsts.STATUS_NORMAL, BotAdminActionConsts.TYPE_QUOTA);
         // quota step
-
 
 
         //  quota change
@@ -215,7 +260,7 @@ public class BotService {
             botAdminActionEntity.setQuotaCnt(curQuotaCnt);
             botAdminActionDao.insert(botAdminActionEntity);
         }
-        sendMuteInfo(event.getGroup(), hintStr, userAction.getTargetId());
+        sendQuotaInfo(event.getGroup(), hintStr, userAction.getTargetId());
     }
 
     public void addExtraLife(GroupMessageEvent event, QuotaExtraLifeAction userAction) {
@@ -270,10 +315,10 @@ public class BotService {
         if (normalMember.isMuted()) {
             normalMember.unmute();
         }
-        sendMuteInfo(event.getGroup(), hintStr, userAction.getTargetId());
+        sendQuotaInfo(event.getGroup(), hintStr, userAction.getTargetId());
     }
 
-    private void sendMuteInfo(Group group, String prefixStr, long memberId) {
+    private void sendQuotaInfo(Group group, String prefixStr, long memberId) {
         ScriptResultVo info = getMemberMuteInfo(memberId);
         MessageChainBuilder builder = new MessageChainBuilder();
         if (prefixStr != null) {
@@ -306,18 +351,6 @@ public class BotService {
             builder.append(Image.fromId("{1FC3D44A-6F98-6E13-2025-756013B51688}.jpg"));
             event.getGroup().sendMessage(builder.build());
         }
-    }
-
-    public void showMemberQuota(MessageEvent event) {
-        long memberId = Long.parseLong(event.getMessage().contentToString());
-        ScriptResultVo info = getMemberMuteInfo(memberId);
-        event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgQuota()));
-    }
-
-    public void showMyQuota(MessageEvent event) {
-        long memberId = event.getSender().getId();
-        ScriptResultVo info = getMemberMuteInfo(memberId);
-        event.getSender().sendMessage(new PlainText(info.getMsgCnt() + "/" + info.getMsgQuota()));
     }
 
     private ScriptResultVo getMemberMuteInfo(long memberId) {

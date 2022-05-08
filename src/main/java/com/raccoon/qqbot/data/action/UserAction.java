@@ -19,7 +19,7 @@ public class UserAction {
 
     public static UserAction From(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
 
-        if (event.getMessage().size() < 4) {
+        if (event.getMessage().size() < 3) {
             return null;
         }
         if (!(event.getMessage().get(1) instanceof At)) {
@@ -31,10 +31,13 @@ public class UserAction {
             return null;
         }
         // third is target
-        if (!(event.getMessage().get(3) instanceof At)) {
-            return null;
+        At target = null;
+        if (event.getMessage().size() > 3 && (event.getMessage().get(3) instanceof At)) {
+            // 未指定，则为自己
+            target = (At) event.getMessage().get(3);
+        } else {
+            target = me;
         }
-        At target = (At) event.getMessage().get(3);
 
         // action
         if (!(event.getMessage().get(2) instanceof PlainText)) {
@@ -61,6 +64,9 @@ public class UserAction {
 
         UserAction userAction = null;
         switch (type) {
+            case QUOTA_SHOW:
+                userAction = new QuotaShowAction();
+                break;
             case QUOTA_INCREASE:
             case QUOTA_DECREASE:
                 userAction = new QuotaChangeAction();
@@ -172,11 +178,12 @@ public class UserAction {
 
     public enum Type {
         NONE(0, null, null),
-        QUOTA_SHOW(1, "看", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
-        QUOTA_INCREASE(2, "夸", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
-        QUOTA_DECREASE(3, "干", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
-        QUOTA_EXTRALIFE_ADD(4, "续", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR}),
-        MUTE_SELF(5, "怼", new Permission[]{Permission.CODING_EMPEROR, Permission.MEMBER});
+        QUOTA_SHOW(1, "看", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR, Permission.CODING_TIGER, Permission.MEMBER}),
+        QUOTA_INCREASE(2, "夸", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
+        QUOTA_DECREASE(3, "干", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
+        QUOTA_EXTRALIFE_ADD(4, "续", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
+        // 禁言自己
+        MUTE_SELF(5, "怼", new Permission[]{Permission.CODING_EMPEROR, Permission.CODING_TIGER, Permission.MEMBER});
 
         private int type;
         private Permission[] permissionArray;

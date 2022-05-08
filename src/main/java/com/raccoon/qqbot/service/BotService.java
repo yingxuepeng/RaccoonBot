@@ -22,6 +22,7 @@ import com.raccoon.qqbot.exception.ReturnedException;
 import com.raccoon.qqbot.exception.ServiceError;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Group;
+import net.mamoe.mirai.contact.NormalMember;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.event.events.MemberJoinEvent;
 import net.mamoe.mirai.event.events.MemberJoinRequestEvent;
@@ -201,9 +202,9 @@ public class BotService {
         curQuotaCnt = Math.min(Math.max(minQuota, curQuotaCnt + deltaQuotaCnt), maxQuota);
         String hintStr = "";
         if (deltaQuotaCnt > 0) {
-            hintStr = "干干干~都可以干！";
-        } else {
             hintStr = "夸夸夸~都可以夸！";
+        } else {
+            hintStr = "干干干~都可以干！";
         }
         if (isUpdate) {
             if (curQuotaCnt == botAdminActionEntity.getQuotaCnt()) {
@@ -265,7 +266,6 @@ public class BotService {
         curQuotaCnt = Math.min((curQuotaCnt + deltaQuotaCnt), maxQuota);
         String hintStr = "续续续~又续了命！";
 
-
         if (isUpdate) {
             if (curQuotaCnt == botAdminActionEntity.getQuotaCnt()) {
                 if (curQuotaCnt == maxQuota) {
@@ -278,6 +278,10 @@ public class BotService {
         } else {
             botAdminActionEntity.setQuotaCnt(curQuotaCnt);
             botAdminActionDao.insert(botAdminActionEntity);
+        }
+        NormalMember normalMember = event.getGroup().getMembers().get(userAction.getTargetId());
+        if (normalMember.isMuted()) {
+            normalMember.unmute();
         }
         sendMuteInfo(event.getGroup(), hintStr, userAction.getTargetId());
     }

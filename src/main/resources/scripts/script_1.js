@@ -6,7 +6,7 @@ function shouldMute(dataStr) {
     var msgQuota = BASE_QUOTA;
     for (var index = 0; index < data.actionList.length; index++) {
         var action = data.actionList[index];
-        msgQuota += action.quotaCnt * msgQuota;
+        msgQuota += action.quotaCnt * action.quotaStep;
     }
     var result = { shouldMute: false, msgCnt: data.msgTimeList.length, msgQuota: msgQuota };
     if (result.msgCnt >= result.msgQuota) {

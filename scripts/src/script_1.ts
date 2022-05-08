@@ -34,7 +34,7 @@ function shouldMute(dataStr: string): string {
   let msgQuota = BASE_QUOTA;
   for (let index = 0; index < data.actionList.length; index++) {
     const action = data.actionList[index];
-    msgQuota += action.quotaCnt * msgQuota;
+    msgQuota += action.quotaCnt * action.quotaStep;
   }
   let result: Result = { shouldMute: false, msgCnt: data.msgTimeList.length, msgQuota };
 

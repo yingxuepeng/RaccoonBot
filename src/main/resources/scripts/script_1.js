@@ -1,5 +1,14 @@
-var DURATION = 86400 * 1000;
 var BASE_QUOTA = 150;
+var MIN_QUOTA = 20;
+/**
+ *
+ * @param {
+ * msgTimeList, // time in millisec
+ * duration, // mute duration
+ * adminCnt //mute admin count
+ * } data
+ * @returns should mute
+ */
 function shouldMute(dataStr) {
     var data = JSON.parse(dataStr);
     // change quota
@@ -7,6 +16,9 @@ function shouldMute(dataStr) {
     for (var index = 0; index < data.actionList.length; index++) {
         var action = data.actionList[index];
         msgQuota += action.quotaCnt * action.quotaStep;
+    }
+    if (msgQuota < MIN_QUOTA) {
+        msgQuota = MIN_QUOTA;
     }
     var result = { shouldMute: false, msgCnt: data.msgTimeList.length, msgQuota: msgQuota };
     if (result.msgCnt >= result.msgQuota) {

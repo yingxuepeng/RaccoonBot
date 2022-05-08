@@ -8,13 +8,12 @@ import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.PlainText;
 
 public class UserAction {
-
-    private UserActionConsts.Type type;
+    private Type type;
     private long senderId;
     private long targetId;
 
-    private UserActionConsts.Permission senderPermission;
-    private UserActionConsts.Permission targetPermission;
+    private Permission senderPermission;
+    private Permission targetPermission;
     private String actionStr;
 
 
@@ -42,9 +41,11 @@ public class UserAction {
             return null;
         }
         PlainText action = (PlainText) event.getMessage().get(2);
-        UserActionConsts.Type type = UserActionConsts.Type.NONE;
+
+        // get action type
+        Type type = Type.NONE;
         String actionStr = action.getContent().trim();
-        for (UserActionConsts.Type value : UserActionConsts.Type.values()) {
+        for (Type value : Type.values()) {
             if (value.getKeyword() == null) {
                 continue;
             }
@@ -54,11 +55,23 @@ public class UserAction {
             }
         }
 
-        if (type == UserActionConsts.Type.NONE) {
+        if (type == Type.NONE) {
             return null;
         }
 
-        UserAction userAction = new UserAction();
+        UserAction userAction = null;
+        switch (type) {
+            case QUOTA_INCREASE:
+            case QUOTA_DECREASE:
+                userAction = new QuotaChangeAction();
+                break;
+            case QUOTA_EXTRALIFE_ADD:
+                userAction = new QuotaExtraLifeAction();
+                break;
+            default:
+                userAction = new UserAction();
+                break;
+        }
         userAction.type = type;
         userAction.senderId = event.getSender().getId();
         userAction.targetId = target.getTarget();
@@ -69,24 +82,25 @@ public class UserAction {
         return userAction;
     }
 
-    public static UserActionConsts.Permission GetPermission(Member member) {
-        UserActionConsts.Permission memberPermission = UserActionConsts.Permission.MEMBER;
+    public static Permission GetPermission(Member member) {
+        Permission memberPermission = Permission.MEMBER;
         if (member.getPermission() == MemberPermission.ADMINISTRATOR) {
-            memberPermission = UserActionConsts.Permission.ADMINISTRATOR;
+            memberPermission = Permission.ADMINISTRATOR;
         } else if (member.getPermission() == MemberPermission.OWNER) {
-            memberPermission = UserActionConsts.Permission.OWNER;
+            memberPermission = Permission.OWNER;
         } else if (member.getSpecialTitle().contains("\uD83D\uDC51")) {
-            memberPermission = UserActionConsts.Permission.CODING_EMPEROR;
+            memberPermission = Permission.CODING_EMPEROR;
+        } else if (member.getSpecialTitle().contains("\uD83D\uDC2F")) {
+            memberPermission = Permission.CODING_TIGER;
         }
         return memberPermission;
-
     }
 
-    public UserActionConsts.Type getType() {
+    public Type getType() {
         return type;
     }
 
-    public void setType(UserActionConsts.Type type) {
+    public void setType(Type type) {
         this.type = type;
     }
 
@@ -106,19 +120,19 @@ public class UserAction {
         this.targetId = targetId;
     }
 
-    public UserActionConsts.Permission getSenderPermission() {
+    public Permission getSenderPermission() {
         return senderPermission;
     }
 
-    public void setSenderPermission(UserActionConsts.Permission senderPermission) {
+    public void setSenderPermission(Permission senderPermission) {
         this.senderPermission = senderPermission;
     }
 
-    public UserActionConsts.Permission getTargetPermission() {
+    public Permission getTargetPermission() {
         return targetPermission;
     }
 
-    public void setTargetPermission(UserActionConsts.Permission targetPermission) {
+    public void setTargetPermission(Permission targetPermission) {
         this.targetPermission = targetPermission;
     }
 
@@ -128,5 +142,84 @@ public class UserAction {
 
     public void setActionStr(String actionStr) {
         this.actionStr = actionStr;
+    }
+
+    public enum Permission {
+        MEMBER(0),
+        CODING_TIGER(1),
+        CODING_EMPEROR(2),
+        ADMINISTRATOR(3),
+        OWNER(4);
+
+        private int privilege;
+
+        Permission(int privilege) {
+            this.privilege = privilege;
+        }
+
+        public boolean lessThan(Permission permission) {
+            return this.getPrivilege() < permission.getPrivilege();
+        }
+
+        public int getPrivilege() {
+            return privilege;
+        }
+
+        public void setPrivilege(int privilege) {
+            this.privilege = privilege;
+        }
+    }
+
+    public enum Type {
+        NONE(0, null, null),
+        QUOTA_SHOW(1, "看", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
+        QUOTA_INCREASE(2, "夸", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
+        QUOTA_DECREASE(3, "干", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
+        QUOTA_EXTRALIFE_ADD(4, "续", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR}),
+        MUTE_SELF(5, "怼", new Permission[]{Permission.CODING_EMPEROR, Permission.MEMBER});
+
+        private int type;
+        private Permission[] permissionArray;
+        private String keyword;
+
+        Type(int type, String keyword, Permission[] permissionArray) {
+            this.type = type;
+            this.permissionArray = permissionArray;
+            this.keyword = keyword;
+        }
+
+        public int getType() {
+            return type;
+        }
+
+        public void setType(int type) {
+            this.type = type;
+        }
+
+        public Permission[] getPermissionArray() {
+            return permissionArray;
+        }
+
+        public void setPermissionArray(Permission[] permissionArray) {
+            this.permissionArray = permissionArray;
+        }
+
+        public String getKeyword() {
+            return keyword;
+        }
+
+        public void setKeyword(String keyword) {
+            this.keyword = keyword;
+        }
+
+        public boolean hasPermission(Member member) {
+            Permission memberPermission = GetPermission(member);
+            for (Permission permission : permissionArray) {
+                if (permission == memberPermission) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

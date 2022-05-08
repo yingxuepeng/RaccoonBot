@@ -7,8 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raccoon.qqbot.cache.RedisService;
 import com.raccoon.qqbot.config.MiraiConfig;
 import com.raccoon.qqbot.data.ScriptResultVo;
+import com.raccoon.qqbot.data.action.QuotaChangeAction;
+import com.raccoon.qqbot.data.action.QuotaExtraLifeAction;
 import com.raccoon.qqbot.data.action.UserAction;
-import com.raccoon.qqbot.data.action.UserActionConsts;
 import com.raccoon.qqbot.db.consts.BotAdminActionConsts;
 import com.raccoon.qqbot.db.dao.BotAdminActionDao;
 import com.raccoon.qqbot.db.dao.BotScriptDao;
@@ -154,9 +155,9 @@ public class BotService {
         group.sendMessage("~权限不足，小浣熊哭哭~");
     }
 
-    public void changeQuota(GroupMessageEvent event, UserAction userAction) {
+    public void changeQuota(GroupMessageEvent event, QuotaChangeAction userAction) {
         // 无法禁言管理员
-        if (!userAction.getTargetPermission().lessThan(UserActionConsts.Permission.ADMINISTRATOR)) {
+        if (!userAction.getTargetPermission().lessThan(UserAction.Permission.ADMINISTRATOR)) {
             sendNoPermissionMessage(event.getGroup());
             return;
         }
@@ -164,18 +165,11 @@ public class BotService {
                 BotAdminActionConsts.STATUS_NORMAL, BotAdminActionConsts.TYPE_QUOTA);
         // quota step
 
-        int quotaStep = 0;
-        if (userAction.getSenderPermission() == UserActionConsts.Permission.CODING_EMPEROR) {
-            quotaStep = 3;
-        } else if (userAction.getSenderPermission() == UserActionConsts.Permission.ADMINISTRATOR
-                || userAction.getSenderPermission() == UserActionConsts.Permission.OWNER) {
-            quotaStep = 6;
-        } else {
-            throw new ReturnedException(ServiceError.CODING_BRANCH_NOT_COVERAGE);
-        }
+
+
         //  quota change
         int deltaQuotaCnt = StringUtils.countOccurrencesOf(userAction.getActionStr(), userAction.getType().getKeyword());
-        if (userAction.getType() == UserActionConsts.Type.QUOTA_DECREASE) {
+        if (userAction.getType() == UserAction.Type.QUOTA_DECREASE) {
             deltaQuotaCnt = -deltaQuotaCnt;
         }
         int curQuotaCnt = 0;
@@ -183,23 +177,23 @@ public class BotService {
         if (botAdminActionEntity == null) {
             isUpdate = false;
             botAdminActionEntity = botAdminActionDao.createEntity(userAction.getSenderId(), userAction.getTargetId(), BotAdminActionConsts.TYPE_QUOTA);
-
-            // expire time
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTimeInMillis(System.currentTimeMillis());
-            // 默认2个月
-            calendar.add(Calendar.MONTH, 2);
-            LocalDateTime localDateTime = calendar.getTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-            botAdminActionEntity.setExpireTime(localDateTime);
-
         } else {
             curQuotaCnt += botAdminActionEntity.getQuotaCnt();
         }
+        // step
+        int quotaStep = userAction.getStep();
         botAdminActionEntity.setQuotaStep(quotaStep);
 
-        final int minQuota = -5;
-        final int maxQuota = 10;
-        curQuotaCnt = Math.min(Math.max(minQuota, curQuotaCnt + deltaQuotaCnt), maxQuota);
+        // expire time，延长2个月
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(System.currentTimeMillis());
+        calendar.add(Calendar.MONTH, 2);
+        LocalDateTime localDateTime = calendar.getTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        botAdminActionEntity.setExpireTime(localDateTime);
+
+        // quota cnt
+        QuotaChangeAction.Range range = userAction.getRange();
+        curQuotaCnt = Math.min(Math.max(range.getMin(), curQuotaCnt + deltaQuotaCnt), range.getMax());
         String hintStr = "";
         if (deltaQuotaCnt > 0) {
             hintStr = "夸夸夸~都可以夸！";
@@ -208,9 +202,9 @@ public class BotService {
         }
         if (isUpdate) {
             if (curQuotaCnt == botAdminActionEntity.getQuotaCnt()) {
-                if (curQuotaCnt == minQuota) {
+                if (curQuotaCnt == range.getMin()) {
                     event.getGroup().sendMessage("干到底了，真得干不动了~");
-                } else if (curQuotaCnt == maxQuota) {
+                } else if (curQuotaCnt == range.getMax()) {
                     event.getGroup().sendMessage("夸上天了，真得夸不动了~");
                 }
                 return;
@@ -224,8 +218,8 @@ public class BotService {
         sendMuteInfo(event.getGroup(), hintStr, userAction.getTargetId());
     }
 
-    public void addExtraLife(GroupMessageEvent event, UserAction userAction) {
-        if (!userAction.getTargetPermission().lessThan(UserActionConsts.Permission.ADMINISTRATOR)) {
+    public void addExtraLife(GroupMessageEvent event, QuotaExtraLifeAction userAction) {
+        if (!userAction.getTargetPermission().lessThan(UserAction.Permission.ADMINISTRATOR)) {
             sendNoPermissionMessage(event.getGroup());
             return;
         }
@@ -233,15 +227,8 @@ public class BotService {
                 BotAdminActionConsts.STATUS_NORMAL, BotAdminActionConsts.TYPE_QUOTA_EXTRA);
         // quota step
 
-        int quotaStep = 0;
-        if (userAction.getSenderPermission() == UserActionConsts.Permission.CODING_EMPEROR) {
-            quotaStep = 20;
-        } else if (userAction.getSenderPermission() == UserActionConsts.Permission.ADMINISTRATOR
-                || userAction.getSenderPermission() == UserActionConsts.Permission.OWNER) {
-            quotaStep = 40;
-        } else {
-            throw new ReturnedException(ServiceError.CODING_BRANCH_NOT_COVERAGE);
-        }
+        int quotaStep = userAction.getStep();
+
         //  quota change
         int deltaQuotaCnt = StringUtils.countOccurrencesOf(userAction.getActionStr(), userAction.getType().getKeyword());
 
@@ -262,13 +249,13 @@ public class BotService {
         }
         botAdminActionEntity.setQuotaStep(quotaStep);
 
-        final int maxQuota = 5;
-        curQuotaCnt = Math.min((curQuotaCnt + deltaQuotaCnt), maxQuota);
+
+        curQuotaCnt = Math.min((curQuotaCnt + deltaQuotaCnt), userAction.getMaxLifeCnt());
         String hintStr = "续续续~又续了命！";
 
         if (isUpdate) {
             if (curQuotaCnt == botAdminActionEntity.getQuotaCnt()) {
-                if (curQuotaCnt == maxQuota) {
+                if (curQuotaCnt == userAction.getMaxLifeCnt()) {
                     event.getGroup().sendMessage("续到头了，真得续不动了~");
                 }
                 return;

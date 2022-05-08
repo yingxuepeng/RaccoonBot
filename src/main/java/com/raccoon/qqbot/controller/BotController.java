@@ -1,6 +1,8 @@
 package com.raccoon.qqbot.controller;
 
 import com.raccoon.qqbot.config.MiraiConfig;
+import com.raccoon.qqbot.data.action.QuotaChangeAction;
+import com.raccoon.qqbot.data.action.QuotaExtraLifeAction;
 import com.raccoon.qqbot.data.action.UserAction;
 import com.raccoon.qqbot.service.BotService;
 import net.mamoe.mirai.Bot;
@@ -78,10 +80,10 @@ public class BotController {
                     break;
                 case QUOTA_INCREASE:
                 case QUOTA_DECREASE:
-                    botService.changeQuota(event, userAction);
+                    botService.changeQuota(event, (QuotaChangeAction) userAction);
                     break;
                 case QUOTA_EXTRALIFE_ADD:
-                    botService.addExtraLife(event, userAction);
+                    botService.addExtraLife(event, (QuotaExtraLifeAction) userAction);
                 default:
                     break;
             }

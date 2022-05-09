@@ -1,18 +1,3 @@
-CREATE TABLE `bot_message` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `sender_id` bigint(20) unsigned NOT NULL,
-  `content` varchar(10000) NOT NULL,
-  `label_type` int(10) unsigned DEFAULT NULL,
-  `label_first` varchar(45) DEFAULT NULL,
-  `label_second` varchar(45) DEFAULT NULL,
-  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `is_del` bit(1) NOT NULL,
-  `is_trainable` bit(1) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_UNIQUE` (`id`),
-  KEY `idx_sender_time` (`sender_id`,`create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 CREATE TABLE `bot_admin_action` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `admin_id` bigint(20) unsigned NOT NULL,
@@ -29,11 +14,29 @@ CREATE TABLE `bot_admin_action` (
   UNIQUE KEY `id_UNIQUE` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `bot_message` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `sender_id` bigint(20) unsigned NOT NULL,
+  `content` varchar(10000) NOT NULL,
+  `label_crtype` tinyint(3) unsigned DEFAULT NULL,
+  `label_type` int(10) unsigned DEFAULT NULL,
+  `label_first` varchar(45) DEFAULT NULL,
+  `label_second` varchar(45) DEFAULT NULL,
+  `lf_pby` float DEFAULT NULL,
+  `ls_pby` float DEFAULT NULL,
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_del` bit(1) NOT NULL,
+  `is_trainable` bit(1) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  KEY `idx_sender_time` (`create_time`,`sender_id`,`label_first`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `bot_script` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `type` tinyint(4) unsigned NOT NULL,
-  `script_url` varchar(256) NOT NULL,
-  `script_entrance` varchar(32) NOT NULL,
+  `script_url` varchar(256) CHARACTER SET latin1 NOT NULL,
+  `script_entrance` varchar(32) CHARACTER SET latin1 NOT NULL,
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `is_del` bit(1) NOT NULL,
   PRIMARY KEY (`id`),
@@ -44,7 +47,7 @@ CREATE TABLE `bot_used_invcode` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `member_id` bigint(20) unsigned NOT NULL,
   `solution_id` int(10) unsigned NOT NULL,
-  `invcode` varchar(64) NOT NULL,
+  `invcode` varchar(64) CHARACTER SET latin1 NOT NULL,
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `is_del` bit(1) NOT NULL,
   PRIMARY KEY (`id`),
@@ -79,3 +82,7 @@ CREATE TABLE `solution` (
   KEY `res` (`result`),
   KEY `cid` (`contest_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 ROW_FORMAT=FIXED;
+
+
+
+

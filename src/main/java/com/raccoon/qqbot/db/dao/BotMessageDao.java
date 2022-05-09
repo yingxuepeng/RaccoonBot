@@ -17,5 +17,9 @@ public interface BotMessageDao extends BotBaseMapper<BotMessageEntity> {
      * @return [{senderId, msgCnt}, ...]
      */
     @Select("select sender_id,count(1) as msg_cnt from bot_message where create_time >= #{createTime} group by sender_id order by count(1) desc limit 5")
-    List<BotUserQuotaVo> selectDailyTop5(@Param("createTime") LocalDateTime createTime);
+    List<BotUserQuotaVo> selectMsgTop5(@Param("createTime") LocalDateTime createTime);
+
+    @Select("select sender_id,count(1) as msg_cnt from bot_message where create_time >= #{createTime} and label_first = #{label}" +
+            " group by sender_id order by count(1) desc limit 5")
+    List<BotUserQuotaVo> selectMsgLabelTop5(@Param("createTime") LocalDateTime createTime, @Param("label") String label);
 }

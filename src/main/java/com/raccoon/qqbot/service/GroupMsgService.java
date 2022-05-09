@@ -14,11 +14,15 @@ import com.raccoon.qqbot.db.entity.BotMessageEntity;
 import com.raccoon.qqbot.db.entity.BotScriptEntity;
 import com.raccoon.qqbot.exception.ReturnedException;
 import com.raccoon.qqbot.exception.ServiceError;
+import com.tencentcloudapi.common.exception.TencentCloudSDKException;
+import com.tencentcloudapi.nlp.v20190408.models.ClassificationResult;
+import com.tencentcloudapi.nlp.v20190408.models.TextClassificationResponse;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.contact.NormalMember;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.*;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -263,12 +267,14 @@ public class GroupMsgService extends BaseService {
         }
 
         if (isTrainableMsg) {
-            if (handleRepeatMsg(msg)) {
+            if (handleRepeatMsg(event.getMessage().contentToString())) {
                 isTrainableMsg = false;
                 entity.setLabelCrtype(BotMessageConsts.LABEL_CRTYPE_RULE);
-                entity.setLabelType(BotMessageConsts.RULETYPE_NONE);
+                entity.setLabelType(BotMessageConsts.LABELTYPE_NONE);
                 entity.setLabelFirst("复读");
                 entity.setLabelSecond("复读");
+                entity.setLfPby(1f);
+                entity.setLsPby(1f);
             }
         }
 
@@ -277,20 +283,21 @@ public class GroupMsgService extends BaseService {
         entity.setIsDel(false);
         entity.setIsTrainable(isTrainableMsg);
         botMessageDao.insert(entity);
+
+        if (isTrainableMsg) {
+            startMsgClassificationTask(entity.getId(), msg);
+        }
     }
 
     private Boolean getGroupMsgString(GroupMessageEvent event, StringBuilder resultStr) {
         MessageChain msgChain = event.getMessage();
 
-        int msgCnt = 0;
+        int textCnt = 0;
         for (Message msg : msgChain) {
-
             if (msg instanceof PlainText) {
                 PlainText text = (PlainText) msg;
                 resultStr.append(text.contentToString().trim());
-            } else if (msg instanceof Image) {
-                Image image = (Image) msg;
-                resultStr.append(" [").append(image.getImageId()).append("] ");
+                textCnt++;
             } else if (msg instanceof At) {
                 At at = (At) msg;
                 resultStr.append(" [@").append(getMemberName(event, at.getTarget())).append("] ");
@@ -302,13 +309,12 @@ public class GroupMsgService extends BaseService {
             } else {
                 continue;
             }
-            msgCnt++;
         }
 
-        if (msgCnt <= 0) {
+        if (textCnt <= 0) {
             resultStr.append(msgChain.contentToString());
         }
-        return msgCnt > 0;
+        return textCnt > 0;
     }
 
     private boolean handleRepeatMsg(String msg) {
@@ -344,13 +350,44 @@ public class GroupMsgService extends BaseService {
         }
     }
 
-    public void showMsgTop5(GroupMessageEvent event) {
-        List<BotUserQuotaVo> userQuotaList = botMessageDao.selectDailyTop5(getTodayMidnight());
+    public void showMsgAllTop5(GroupMessageEvent event) {
+        List<BotUserQuotaVo> userQuotaList = botMessageDao.selectMsgTop5(getTodayMidnight());
         String msg = "今日发言TOP5：\n";
         for (int i = 0; i < userQuotaList.size(); i++) {
             BotUserQuotaVo uq = userQuotaList.get(i);
             msg += i + "." + getMemberName(event, uq.getSenderId()) + " : " + uq.getMsgCnt() + "\n";
         }
         event.getGroup().sendMessage(msg);
+    }
+
+    public void showMsgRepeatTop5(GroupMessageEvent event) {
+        List<BotUserQuotaVo> userQuotaList = botMessageDao.selectMsgLabelTop5(getTodayMidnight(), "复读");
+        String msg = "今日复读TOP5：\n";
+        for (int i = 0; i < userQuotaList.size(); i++) {
+            BotUserQuotaVo uq = userQuotaList.get(i);
+            msg += i + "." + getMemberName(event, uq.getSenderId()) + " : " + uq.getMsgCnt() + "\n";
+        }
+        event.getGroup().sendMessage(msg);
+    }
+
+    @Async
+    private void startMsgClassificationTask(long msgId, String msg) {
+        BotMessageEntity entity = botMessageDao.selectById(msgId);
+        try {
+            TextClassificationResponse resp = qCloudService.getMsgLabel(msg);
+            if (resp.getClasses().length <= 0) {
+                return;
+            }
+            ClassificationResult clsResult = resp.getClasses()[0];
+            entity.setLabelCrtype(BotMessageConsts.LABEL_CRTYPE_QQNLP);
+            entity.setLabelType(BotMessageConsts.LABELTYPE_NONE);
+            entity.setLabelFirst(clsResult.getFirstClassName());
+            entity.setLabelSecond(clsResult.getSecondClassName());
+            entity.setLfPby(clsResult.getFirstClassProbability());
+            entity.setLsPby(clsResult.getSecondClassProbability());
+        } catch (TencentCloudSDKException e) {
+            entity.setIsTrainable(false);
+        }
+        botMessageDao.updateById(entity);
     }
 }

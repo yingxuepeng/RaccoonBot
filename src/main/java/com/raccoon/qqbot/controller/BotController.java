@@ -5,8 +5,8 @@ import com.raccoon.qqbot.data.action.QuotaChangeAction;
 import com.raccoon.qqbot.data.action.QuotaExtraLifeAction;
 import com.raccoon.qqbot.data.action.QuotaShowAction;
 import com.raccoon.qqbot.data.action.UserAction;
-import com.raccoon.qqbot.service.GroupMsgService;
 import com.raccoon.qqbot.service.GroupJoinService;
+import com.raccoon.qqbot.service.GroupMsgService;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.events.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,8 +88,10 @@ public class BotController {
                     break;
                 case QUOTA_EXTRALIFE_ADD:
                     groupMsgService.addExtraLife(event, (QuotaExtraLifeAction) userAction);
-                case MSG_TOP5:
-                    groupMsgService.showMsgTop5(event);
+                case MSG_ALL_TOP5:
+                    groupMsgService.showMsgAllTop5(event);
+                case MSG_REPEAT_TOP5:
+                    groupMsgService.showMsgRepeatTop5(event);
                 default:
                     break;
             }

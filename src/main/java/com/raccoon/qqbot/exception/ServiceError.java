@@ -15,6 +15,7 @@ public enum ServiceError {
 
     // external
     NETWORK_ERROR(302001, "网络错误"),
+    QCLOUD_NLP_ERROR(302002, "腾讯云NLP请求错误"),
 
     // coding
     CODING_BRANCH_NOT_COVERAGE(990001, "未实现的逻辑分支");

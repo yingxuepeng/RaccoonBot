@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raccoon.qqbot.cache.RedisService;
 import com.raccoon.qqbot.config.MiraiConfig;
 import com.raccoon.qqbot.db.dao.*;
+import com.raccoon.qqbot.service.external.QCloudService;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Group;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +25,11 @@ public abstract class BaseService {
     @Autowired
     protected MiraiConfig.MiraiInfo miraiInfo;
 
-    // service
+    // external service
     @Autowired
     protected RedisService redisService;
+    @Autowired
+    protected QCloudService qCloudService;
     // dao
     @Resource
     protected SolutionDao solutionDao;
@@ -38,6 +41,7 @@ public abstract class BaseService {
     protected BotScriptDao botScriptDao;
     @Resource
     protected BotMessageDao botMessageDao;
+
 
     @PostConstruct
     protected void init() {

@@ -34,6 +34,10 @@ public class BotMessageEntity implements Serializable {
 
     private String labelSecond;
 
+    private Float lfPby;
+
+    private Float lsPby;
+
     private LocalDateTime createTime;
 
     private Boolean isDel;
@@ -89,6 +93,20 @@ public class BotMessageEntity implements Serializable {
     public void setLabelSecond(String labelSecond) {
         this.labelSecond = labelSecond;
     }
+    public Float getLfPby() {
+        return lfPby;
+    }
+
+    public void setLfPby(Float lfPby) {
+        this.lfPby = lfPby;
+    }
+    public Float getLsPby() {
+        return lsPby;
+    }
+
+    public void setLsPby(Float lsPby) {
+        this.lsPby = lsPby;
+    }
     public LocalDateTime getCreateTime() {
         return createTime;
     }
@@ -121,6 +139,8 @@ public class BotMessageEntity implements Serializable {
             ", labelType=" + labelType +
             ", labelFirst=" + labelFirst +
             ", labelSecond=" + labelSecond +
+            ", lfPby=" + lfPby +
+            ", lsPby=" + lsPby +
             ", createTime=" + createTime +
             ", isDel=" + isDel +
             ", isTrainable=" + isTrainable +

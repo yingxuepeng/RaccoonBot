@@ -11,5 +11,8 @@ if test -f "$FILE"; then
   fi
   sudo rm -f pid
 fi
+sudo rm -f pause
 sleep 3s
 sudo nohup java -jar qqbot-2.0.0-SNAPSHOT.jar --spring.profiles.active=prod > /dev/null & echo $! > pid &
+sleep 1s
+echo "`cat pid`"

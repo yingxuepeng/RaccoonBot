@@ -88,10 +88,13 @@ public class BotController {
                     break;
                 case QUOTA_EXTRALIFE_ADD:
                     groupMsgService.addExtraLife(event, (QuotaExtraLifeAction) userAction);
+                    break;
                 case MSG_ALL_TOP5:
                     groupMsgService.showMsgAllTop5(event);
+                    break;
                 case MSG_REPEAT_TOP5:
                     groupMsgService.showMsgRepeatTop5(event);
+                    break;
                 default:
                     break;
             }

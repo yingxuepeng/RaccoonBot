@@ -6,20 +6,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raccoon.qqbot.cache.RedisService;
 import com.raccoon.qqbot.config.MiraiConfig;
+import com.raccoon.qqbot.data.BotUserQuotaVo;
 import com.raccoon.qqbot.data.ScriptResultVo;
 import com.raccoon.qqbot.data.action.QuotaChangeAction;
 import com.raccoon.qqbot.data.action.QuotaExtraLifeAction;
 import com.raccoon.qqbot.data.action.QuotaShowAction;
 import com.raccoon.qqbot.data.action.UserAction;
 import com.raccoon.qqbot.db.consts.BotAdminActionConsts;
-import com.raccoon.qqbot.db.dao.BotAdminActionDao;
-import com.raccoon.qqbot.db.dao.BotScriptDao;
-import com.raccoon.qqbot.db.dao.BotUsedInvcodeDao;
-import com.raccoon.qqbot.db.dao.SolutionDao;
-import com.raccoon.qqbot.db.entity.BotAdminActionEntity;
-import com.raccoon.qqbot.db.entity.BotScriptEntity;
-import com.raccoon.qqbot.db.entity.BotUsedInvcodeEntity;
-import com.raccoon.qqbot.db.entity.SolutionEntity;
+import com.raccoon.qqbot.db.dao.*;
+import com.raccoon.qqbot.db.entity.*;
 import com.raccoon.qqbot.exception.ReturnedException;
 import com.raccoon.qqbot.exception.ServiceError;
 import net.mamoe.mirai.Bot;
@@ -29,10 +24,7 @@ import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.event.events.MemberJoinEvent;
 import net.mamoe.mirai.event.events.MemberJoinRequestEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
-import net.mamoe.mirai.message.data.At;
-import net.mamoe.mirai.message.data.Image;
-import net.mamoe.mirai.message.data.MessageChainBuilder;
-import net.mamoe.mirai.message.data.PlainText;
+import net.mamoe.mirai.message.data.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -45,7 +37,9 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -75,6 +69,8 @@ public class BotService {
     private BotUsedInvcodeDao botUsedInvcodeDao;
     @Resource
     private BotScriptDao botScriptDao;
+    @Resource
+    private BotMessageDao botMessageDao;
 
     @PostConstruct
     private void init() {
@@ -170,10 +166,6 @@ public class BotService {
     }
 
     public void showQuota(GroupMessageEvent event, QuotaShowAction userAction) {
-        // 码皇以上可以查看别人quota
-        if (userAction.getSenderId() != userAction.getTargetId() && userAction.getSenderPermission().lessThan(UserAction.Permission.CODING_EMPEROR)) {
-            return;
-        }
         ScriptResultVo info = getMemberMuteInfo(userAction.getTargetId());
         List<BotAdminActionEntity> actionEntityList = botAdminActionDao.selectByMemberScriptStatus(userAction.getTargetId(), 1L, BotAdminActionConsts.STATUS_NORMAL);
         QuotaShowAction.Stat stat = userAction.getStat(actionEntityList);
@@ -192,7 +184,7 @@ public class BotService {
             quotaSumStr += "无";
         }
 
-        String quotaDetailStr ="详情："+ cHeart + "x" + stat.getHeartCnt() + " , " + cBomb + "x" + stat.getBombCnt();
+        String quotaDetailStr = "详情：" + cHeart + "x" + stat.getHeartCnt() + " , " + cBomb + "x" + stat.getBombCnt();
         MessageChainBuilder builder = new MessageChainBuilder();
         builder.append(new At(userAction.getTargetId()));
         builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgQuota() + "\n"));
@@ -202,7 +194,7 @@ public class BotService {
     }
 
     public void changeQuota(GroupMessageEvent event, QuotaChangeAction userAction) {
-        // 无法禁言管理员
+        // 无法禁言管理员，所以不用操作quota
         if (!userAction.getTargetPermission().lessThan(UserAction.Permission.ADMINISTRATOR)) {
             sendNoPermissionMessage(event.getGroup());
             return;
@@ -264,6 +256,7 @@ public class BotService {
     }
 
     public void addExtraLife(GroupMessageEvent event, QuotaExtraLifeAction userAction) {
+        // 无法禁言管理员，所以不用操作quota
         if (!userAction.getTargetPermission().lessThan(UserAction.Permission.ADMINISTRATOR)) {
             sendNoPermissionMessage(event.getGroup());
             return;
@@ -329,39 +322,15 @@ public class BotService {
         group.sendMessage(builder.build());
     }
 
-    public void saveMemberMsg(GroupMessageEvent event) {
-        long memberId = event.getSender().getId();
-        redisService.putMsgTime(memberId);
-        List<Long> memberMsgList = redisService.getMemberMsgTimeList(memberId);
-        if (memberMsgList.size() > 0) {
-        }
-    }
-
-    public void handleMemberMsg(GroupMessageEvent event) {
-        long memberId = event.getSender().getId();
-        ScriptResultVo resultVo = getMemberMuteInfo(memberId);
-
-        if (resultVo.getShouldMute()) {
-            event.getSender().mute((int) (resultVo.getMuteMillis() / 1000));
-
-            ScriptResultVo info = getMemberMuteInfo(memberId);
-            MessageChainBuilder builder = new MessageChainBuilder();
-            builder.append(new At(memberId));
-            builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgQuota() + "，早点睡觉觉吧~\n"));
-            builder.append(Image.fromId("{1FC3D44A-6F98-6E13-2025-756013B51688}.jpg"));
-            event.getGroup().sendMessage(builder.build());
-        }
-    }
-
     private ScriptResultVo getMemberMuteInfo(long memberId) {
         // 暂时写死
         final long scriptId = 1;
         List<BotAdminActionEntity> actionList = botAdminActionDao.selectByMemberScriptStatus(memberId, scriptId, BotAdminActionConsts.STATUS_NORMAL);
         BotScriptEntity botScriptEntity = botScriptDao.selectById(scriptId);
-        List<Long> msgTimeList = redisService.getMemberMsgTimeList(memberId);
+        List<BotMessageEntity> msgBriefList = botMessageDao.selectMessageBrief(memberId, getTodayMidnight());
         HashMap<String, Object> data = new HashMap<>();
         data.put("actionList", actionList);
-        data.put("msgTimeList", msgTimeList);
+        data.put("msgBriefList", msgBriefList);
         String resultStr = runFileScript(botScriptEntity, data);
         try {
             return objectMapper.readValue(resultStr, ScriptResultVo.class);
@@ -392,5 +361,103 @@ public class BotService {
         } catch (IOException e) {
             throw new ReturnedException(ServiceError.JSEXEC_ERROR);
         }
+    }
+
+
+    public void saveMsg(GroupMessageEvent event) {
+        long memberId = event.getSender().getId();
+        redisService.putMsgTime(memberId);
+        // msg save
+        StringBuilder msgStr = new StringBuilder();
+        Boolean isTrainableMsg = getGroupMsgString(event, msgStr);
+        String msg = msgStr.toString();
+        final int MAX_LENGTH = 10000;
+        if (msg.length() > MAX_LENGTH) {
+            msg.substring(0, MAX_LENGTH);
+        }
+
+        BotMessageEntity entity = new BotMessageEntity();
+        entity.setSenderId(memberId);
+        entity.setContent(msg);
+        entity.setIsDel(false);
+        entity.setIsTrainable(isTrainableMsg);
+        botMessageDao.insert(entity);
+    }
+
+    private Boolean getGroupMsgString(GroupMessageEvent event, StringBuilder resultStr) {
+        MessageChain msgChain = event.getMessage();
+
+        int msgCnt = 0;
+        for (Message msg : msgChain) {
+
+            if (msg instanceof PlainText) {
+                PlainText text = (PlainText) msg;
+                resultStr.append(text.contentToString().trim());
+            } else if (msg instanceof Image) {
+                Image image = (Image) msg;
+                resultStr.append(" [").append(image.getImageId()).append("] ");
+            } else if (msg instanceof At) {
+                At at = (At) msg;
+                resultStr.append(" [@").append(getMemberName(event, at.getTarget())).append("] ");
+            } else if (msg instanceof AtAll) {
+                resultStr.append(" [@全体成员] ");
+            } else if (msg instanceof Face) {
+                Face face = (Face) msg;
+                resultStr.append(" " + face.contentToString() + " ");
+            } else {
+                continue;
+            }
+            msgCnt++;
+        }
+
+        if (msgCnt <= 0) {
+            resultStr.append(msgChain.contentToString());
+        }
+        return msgCnt > 0;
+    }
+
+    private String getMemberName(GroupMessageEvent event, long memberId) {
+        NormalMember member = event.getGroup().get(memberId);
+        if (member.getNameCard() != null && member.getNameCard().trim().length() > 0) {
+            return member.getNameCard().trim();
+        }
+        if (member.getNick() != null) {
+            return member.getNick();
+        }
+        return "";
+    }
+
+    public void checkQuota(GroupMessageEvent event) {
+        long memberId = event.getSender().getId();
+        ScriptResultVo resultVo = getMemberMuteInfo(memberId);
+
+        if (resultVo.getShouldMute()) {
+            event.getSender().mute((int) (resultVo.getMuteMillis() / 1000));
+
+            ScriptResultVo info = getMemberMuteInfo(memberId);
+            MessageChainBuilder builder = new MessageChainBuilder();
+            builder.append(new At(memberId));
+            builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgQuota() + "，早点睡觉觉吧~\n"));
+            builder.append(Image.fromId("{1FC3D44A-6F98-6E13-2025-756013B51688}.jpg"));
+            event.getGroup().sendMessage(builder.build());
+        }
+    }
+
+    public void showMsgTop5(GroupMessageEvent event) {
+        List<BotUserQuotaVo> userQuotaList = botMessageDao.selectDailyTop5(getTodayMidnight());
+        String msg = "今日发言TOP5：\n";
+        for (int i = 0; i < userQuotaList.size(); i++) {
+            BotUserQuotaVo uq = userQuotaList.get(i);
+            msg += i + "." + getMemberName(event, uq.getSenderId()) + " : " + uq.getMsgCnt() + "\n";
+        }
+        event.getGroup().sendMessage(msg);
+    }
+
+    private LocalDateTime getTodayMidnight() {
+        LocalTime midnight = LocalTime.MIDNIGHT;
+        LocalDate today = LocalDate.now();
+        LocalDateTime todayMidnight = LocalDateTime.of(today, midnight);
+        return todayMidnight;
+
     }
 }

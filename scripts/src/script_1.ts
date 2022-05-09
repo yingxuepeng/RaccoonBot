@@ -1,4 +1,9 @@
 // quota calc
+
+interface Sc1Data {
+  msgBriefList: MsgBrief[];
+  actionList: AdminAction[];
+}
 interface AdminAction {
   adminId: number;
   memberId: number;
@@ -6,27 +11,29 @@ interface AdminAction {
   quotaCnt: number;
   quotaStep: number;
 }
-interface Sc1Data {
-  msgTimeList: number[];
-  actionList: AdminAction[];
+interface MsgBrief {
+  labelType?: number;
+  labelFirst?: string;
+  labelSecond?: string;
 }
-
+// result
 interface QuotaResult {
   shouldMute: boolean;
   muteMillis?: number;
   msgCnt: number;
   msgQuota: number;
 }
+// const
 const BASE_QUOTA = 150;
 const MIN_QUOTA = 20;
 
 /**
  *
- * @param {
- * msgTimeList, // time in millisec
+ * @param dataStr: {
+ * msgBriefList, // [MsgBrief]
  * duration, // mute duration
  * adminCnt //mute admin count
- * } data
+ * }
  * @returns should mute
  */
 function shouldMute(dataStr: string): string {
@@ -42,7 +49,7 @@ function shouldMute(dataStr: string): string {
   if (msgQuota < MIN_QUOTA) {
     msgQuota = MIN_QUOTA;
   }
-  let result: QuotaResult = { shouldMute: false, msgCnt: data.msgTimeList.length, msgQuota };
+  let result: QuotaResult = { shouldMute: false, msgCnt: data.msgBriefList.length, msgQuota };
 
   if (result.msgCnt >= result.msgQuota) {
     let now = new Date();

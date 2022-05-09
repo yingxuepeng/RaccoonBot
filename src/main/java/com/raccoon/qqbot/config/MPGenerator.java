@@ -80,7 +80,7 @@ public class MPGenerator {
         StrategyConfig strategy = new StrategyConfig();
         strategy.setNaming(NamingStrategy.underline_to_camel);
         strategy.setColumnNaming(NamingStrategy.underline_to_camel);
-        strategy.setInclude("solution,bot_script,bot_admin_action,bot_used_invcode".split(","));
+        strategy.setInclude("solution,bot_script,bot_admin_action,bot_used_invcode,bot_message".split(","));
         strategy.setSuperMapperClass("com.raccoon.qqbot.db.BotBaseMapper");
 
 

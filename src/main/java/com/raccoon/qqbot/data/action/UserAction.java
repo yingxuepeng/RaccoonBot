@@ -184,8 +184,10 @@ public class UserAction {
         QUOTA_INCREASE(2, "夸", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
         QUOTA_DECREASE(3, "干", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
         QUOTA_EXTRALIFE_ADD(4, "续", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
+
+        MSG_TOP5(5, "TOP5", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
         // 禁言自己
-        MUTE_SELF(5, "怼", new Permission[]{Permission.CODING_EMPEROR, Permission.CODING_TIGER, Permission.MEMBER});
+        MUTE_SELF(6, "怼", new Permission[]{Permission.CODING_EMPEROR, Permission.CODING_TIGER, Permission.MEMBER});
 
         private int type;
         private Permission[] permissionArray;

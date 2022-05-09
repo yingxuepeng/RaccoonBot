@@ -1,12 +1,14 @@
+// quota calc
+// const
 var BASE_QUOTA = 150;
 var MIN_QUOTA = 20;
 /**
  *
- * @param {
- * msgTimeList, // time in millisec
+ * @param dataStr: {
+ * msgBriefList, // [MsgBrief]
  * duration, // mute duration
  * adminCnt //mute admin count
- * } data
+ * }
  * @returns should mute
  */
 function shouldMute(dataStr) {
@@ -20,7 +22,7 @@ function shouldMute(dataStr) {
     if (msgQuota < MIN_QUOTA) {
         msgQuota = MIN_QUOTA;
     }
-    var result = { shouldMute: false, msgCnt: data.msgTimeList.length, msgQuota: msgQuota };
+    var result = { shouldMute: false, msgCnt: data.msgBriefList.length, msgQuota: msgQuota };
     if (result.msgCnt >= result.msgQuota) {
         var now = new Date();
         var nowTime = now.getTime();

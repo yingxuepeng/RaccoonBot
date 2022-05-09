@@ -64,8 +64,8 @@ public class BotController {
             // 获取action
             UserAction userAction = UserAction.From(event, miraiInfo);
             if (userAction == null) {
-                botService.saveMemberMsg(event);
-                botService.handleMemberMsg(event);
+                botService.saveMsg(event);
+                botService.checkQuota(event);
                 return;
             }
             // 权限判断
@@ -85,6 +85,8 @@ public class BotController {
                     break;
                 case QUOTA_EXTRALIFE_ADD:
                     botService.addExtraLife(event, (QuotaExtraLifeAction) userAction);
+                case MSG_TOP5:
+                    botService.showMsgTop5(event);
                 default:
                     break;
             }
@@ -93,6 +95,7 @@ public class BotController {
         // 收到单聊消息
         miraiBot.getEventChannel().subscribeAlways(FriendMessageEvent.class, event -> {
             botService.showMemberQuota(event);
+//            botService.showQuotaRank(null);
         });
 
         // 收到陌生人单聊消息

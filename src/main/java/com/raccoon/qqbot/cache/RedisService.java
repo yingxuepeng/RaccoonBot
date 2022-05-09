@@ -30,22 +30,17 @@ public class RedisService {
         return MSG_LIST + memberId + "_" + dateFormat.format(new Date(timestamp));
     }
 
-    public List<Long> getMemberMsgTimeList(long memberId) {
-        long ts = System.currentTimeMillis();
-        List<String> msgTimeList = redisTemplate.opsForList().range(getMsgListKey(memberId, ts), 0, -1);
-        List<Long> longList = msgTimeList.stream().map(Long::parseLong).collect(Collectors.toList());
-        return longList;
-    }
+//    public List<Long> getMemberMsgTimeList(long memberId) {
+//        long ts = System.currentTimeMillis();
+//        List<String> msgTimeList = redisTemplate.opsForList().range(getMsgListKey(memberId, ts), 0, -1);
+//        List<Long> longList = msgTimeList.stream().map(Long::parseLong).collect(Collectors.toList());
+//        return longList;
+//    }
 
     public void putMsgTime(long memberId) {
         long ts = System.currentTimeMillis();
         String key = getMsgListKey(memberId, ts);
         redisTemplate.opsForList().leftPush(key, ts + "");
         redisTemplate.expire(key, CACHE_TIME, TimeUnit.MILLISECONDS);
-    }
-
-    public void clearMsgTimeList(long memberId) {
-        long ts = System.currentTimeMillis();
-        redisTemplate.delete(getMsgListKey(memberId, ts));
     }
 }

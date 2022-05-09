@@ -26,6 +26,8 @@ public class BotMessageEntity implements Serializable {
 
     private String content;
 
+    private Byte labelCrtype;
+
     private Integer labelType;
 
     private String labelFirst;
@@ -58,6 +60,13 @@ public class BotMessageEntity implements Serializable {
 
     public void setContent(String content) {
         this.content = content;
+    }
+    public Byte getLabelCrtype() {
+        return labelCrtype;
+    }
+
+    public void setLabelCrtype(Byte labelCrtype) {
+        this.labelCrtype = labelCrtype;
     }
     public Integer getLabelType() {
         return labelType;
@@ -108,6 +117,7 @@ public class BotMessageEntity implements Serializable {
             "id=" + id +
             ", senderId=" + senderId +
             ", content=" + content +
+            ", labelCrtype=" + labelCrtype +
             ", labelType=" + labelType +
             ", labelFirst=" + labelFirst +
             ", labelSecond=" + labelSecond +

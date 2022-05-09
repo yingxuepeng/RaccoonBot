@@ -1,11 +1,6 @@
 package com.raccoon.qqbot.service;
 
-//import com.raccoon.qqbot.db.dao.SolutionDao;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.raccoon.qqbot.cache.RedisService;
-import com.raccoon.qqbot.config.MiraiConfig;
 import com.raccoon.qqbot.data.BotUserQuotaVo;
 import com.raccoon.qqbot.data.ScriptResultVo;
 import com.raccoon.qqbot.data.action.QuotaChangeAction;
@@ -13,33 +8,27 @@ import com.raccoon.qqbot.data.action.QuotaExtraLifeAction;
 import com.raccoon.qqbot.data.action.QuotaShowAction;
 import com.raccoon.qqbot.data.action.UserAction;
 import com.raccoon.qqbot.db.consts.BotAdminActionConsts;
-import com.raccoon.qqbot.db.dao.*;
-import com.raccoon.qqbot.db.entity.*;
+import com.raccoon.qqbot.db.consts.BotMessageConsts;
+import com.raccoon.qqbot.db.entity.BotAdminActionEntity;
+import com.raccoon.qqbot.db.entity.BotMessageEntity;
+import com.raccoon.qqbot.db.entity.BotScriptEntity;
 import com.raccoon.qqbot.exception.ReturnedException;
 import com.raccoon.qqbot.exception.ServiceError;
-import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.contact.NormalMember;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
-import net.mamoe.mirai.event.events.MemberJoinEvent;
-import net.mamoe.mirai.event.events.MemberJoinRequestEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -47,111 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class BotService {
-    // json
-    private ObjectMapper objectMapper;
-
-    // mirai data
-    @Autowired
-    private Bot miraiBot;
-    @Autowired
-    private MiraiConfig.MiraiInfo miraiInfo;
-
-    // service
-    @Autowired
-    private RedisService redisService;
-    // dao
-    @Resource
-    private SolutionDao solutionDao;
-    @Resource
-    private BotAdminActionDao botAdminActionDao;
-    @Resource
-    private BotUsedInvcodeDao botUsedInvcodeDao;
-    @Resource
-    private BotScriptDao botScriptDao;
-    @Resource
-    private BotMessageDao botMessageDao;
-
-    @PostConstruct
-    private void init() {
-        objectMapper = new ObjectMapper();
-    }
-
-    public void handleJoinRequest(MemberJoinRequestEvent event) {
-        String[] split = event.getMessage().trim().split("答案：");
-        if (split.length < 2) {
-            event.reject(false, "bot邀请码没查到,#开头转人工");
-            return;
-        }
-        String invCode = split[1];
-        if (invCode.startsWith("#")) {
-            return;
-        }
-        SolutionEntity solutionEntity = solutionDao.getByUuid(invCode);
-        if (solutionEntity == null) {
-            event.reject(false, "bot邀请码没查到,#开头转人工");
-            return;
-        }
-
-        BotUsedInvcodeEntity botUsedInvcodeEntity = botUsedInvcodeDao.selectByInvcode(invCode);
-        if (botUsedInvcodeEntity == null) {
-            botUsedInvcodeEntity = new BotUsedInvcodeEntity();
-            botUsedInvcodeEntity.setIsDel(false);
-            botUsedInvcodeEntity.setMemberId(event.getFromId());
-            botUsedInvcodeEntity.setInvcode(invCode);
-            botUsedInvcodeEntity.setSolutionId(solutionEntity.getSolutionId());
-            botUsedInvcodeDao.insert(botUsedInvcodeEntity);
-        } else {
-            // 使用的是已经验证过的邀请码，暂时不处理
-        }
-    }
-
-    public void sendWelcomeMessage(MemberJoinEvent event) {
-        SolutionEntity solutionEntity = getNewMemberSolutionEntity(event.getMember().getId());
-        String title = getMemberTitle(0);
-        if (solutionEntity != null) {
-            title = getMemberTitle(solutionEntity.getProblemId());
-        }
-        MessageChainBuilder builder = new MessageChainBuilder();
-        builder.append(new PlainText("欢迎新" + title + "! "));
-        builder.append(new At(event.getMember().getId()));
-        builder.append(new PlainText("\n请熟读群公告规定，并修改群名片为：'{昵称}_{最好的语言}'!"));
-        miraiBot.getGroup(miraiInfo.getGroupId()).sendMessage(builder.build());
-
-
-        if (solutionEntity == null) {
-            return;
-        }
-        // url
-        String url = "新群友代码地址：\n" + "http://www.primeoj.com/uuid.php?uuid=" + solutionEntity.getSolutionUuid();
-        miraiBot.getGroup(miraiInfo.getGroupId()).sendMessage(new PlainText(url));
-    }
-
-    private SolutionEntity getNewMemberSolutionEntity(long qid) {
-        BotUsedInvcodeEntity botUsedInvcodeEntity = botUsedInvcodeDao.selectByMemberId(qid);
-        if (botUsedInvcodeEntity == null) {
-            return null;
-        }
-
-        return solutionDao.selectById(botUsedInvcodeEntity.getSolutionId());
-    }
-
-    private String getMemberTitle(int problemId) {
-        if (problemId == 1000) {
-            return "码皇";
-        } else if (problemId == 1001) {
-            return "码猴";
-        } else if (problemId == 1002) {
-            return "码农";
-        }
-        return "关系户";
-    }
-
-
-    public void sendNoPermissionMessage(Group group) {
-        group.sendMessage("~权限不足，小浣熊哭哭~");
-    }
-
+public class GroupMsgService extends BaseService {
 
     public void showMemberQuota(MessageEvent event) {
         long memberId = Long.parseLong(event.getMessage().contentToString());
@@ -366,7 +251,8 @@ public class BotService {
 
     public void saveMsg(GroupMessageEvent event) {
         long memberId = event.getSender().getId();
-        redisService.putMsgTime(memberId);
+        BotMessageEntity entity = new BotMessageEntity();
+
         // msg save
         StringBuilder msgStr = new StringBuilder();
         Boolean isTrainableMsg = getGroupMsgString(event, msgStr);
@@ -376,7 +262,16 @@ public class BotService {
             msg.substring(0, MAX_LENGTH);
         }
 
-        BotMessageEntity entity = new BotMessageEntity();
+        if (isTrainableMsg) {
+            if (handleRepeatMsg(msg)) {
+                isTrainableMsg = false;
+                entity.setLabelCrtype(BotMessageConsts.LABEL_CRTYPE_RULE);
+                entity.setLabelType(BotMessageConsts.RULETYPE_NONE);
+                entity.setLabelFirst("复读");
+                entity.setLabelSecond("复读");
+            }
+        }
+
         entity.setSenderId(memberId);
         entity.setContent(msg);
         entity.setIsDel(false);
@@ -416,6 +311,12 @@ public class BotService {
         return msgCnt > 0;
     }
 
+    private boolean handleRepeatMsg(String msg) {
+        boolean isRepeat = redisService.hasMsg(msg);
+        redisService.putMsgKey(msg, 20);
+        return isRepeat;
+    }
+
     private String getMemberName(GroupMessageEvent event, long memberId) {
         NormalMember member = event.getGroup().get(memberId);
         if (member.getNameCard() != null && member.getNameCard().trim().length() > 0) {
@@ -451,13 +352,5 @@ public class BotService {
             msg += i + "." + getMemberName(event, uq.getSenderId()) + " : " + uq.getMsgCnt() + "\n";
         }
         event.getGroup().sendMessage(msg);
-    }
-
-    private LocalDateTime getTodayMidnight() {
-        LocalTime midnight = LocalTime.MIDNIGHT;
-        LocalDate today = LocalDate.now();
-        LocalDateTime todayMidnight = LocalDateTime.of(today, midnight);
-        return todayMidnight;
-
     }
 }

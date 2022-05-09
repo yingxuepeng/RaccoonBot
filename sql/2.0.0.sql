@@ -1,3 +1,18 @@
+CREATE TABLE `bot_message` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `sender_id` bigint(20) unsigned NOT NULL,
+  `content` varchar(10000) NOT NULL,
+  `label_type` int(10) unsigned DEFAULT NULL,
+  `label_first` varchar(45) DEFAULT NULL,
+  `label_second` varchar(45) DEFAULT NULL,
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_del` bit(1) NOT NULL,
+  `is_trainable` bit(1) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  KEY `idx_sender_time` (`sender_id`,`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `bot_admin_action` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `admin_id` bigint(20) unsigned NOT NULL,

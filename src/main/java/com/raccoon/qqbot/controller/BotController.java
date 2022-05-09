@@ -5,7 +5,8 @@ import com.raccoon.qqbot.data.action.QuotaChangeAction;
 import com.raccoon.qqbot.data.action.QuotaExtraLifeAction;
 import com.raccoon.qqbot.data.action.QuotaShowAction;
 import com.raccoon.qqbot.data.action.UserAction;
-import com.raccoon.qqbot.service.BotService;
+import com.raccoon.qqbot.service.GroupMsgService;
+import com.raccoon.qqbot.service.GroupJoinService;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.events.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,9 @@ public class BotController {
 
     // service
     @Autowired
-    private BotService botService;
+    private GroupMsgService groupMsgService;
+    @Autowired
+    private GroupJoinService groupJoinService;
 
 
     @PostConstruct
@@ -44,7 +47,7 @@ public class BotController {
             if (event.getGroupId() != miraiInfo.getGroupId()) {
                 return;
             }
-            botService.handleJoinRequest(event);
+            groupJoinService.handleJoinRequest(event);
         });
 
         // 用户加群
@@ -52,7 +55,7 @@ public class BotController {
             if (event.getGroupId() != miraiInfo.getGroupId()) {
                 return;
             }
-            botService.sendWelcomeMessage(event);
+            groupJoinService.sendWelcomeMessage(event);
         });
 
         // 收到群聊消息
@@ -64,29 +67,29 @@ public class BotController {
             // 获取action
             UserAction userAction = UserAction.From(event, miraiInfo);
             if (userAction == null) {
-                botService.saveMsg(event);
-                botService.checkQuota(event);
+                groupMsgService.saveMsg(event);
+                groupMsgService.checkQuota(event);
                 return;
             }
             // 权限判断
             if (!userAction.getType().hasPermission(event.getSender())) {
-                botService.sendNoPermissionMessage(event.getGroup());
+                groupMsgService.sendNoPermissionMessage(event.getGroup());
                 return;
             }
 
             // 根据type调用不同service func
             switch (userAction.getType()) {
                 case QUOTA_SHOW:
-                    botService.showQuota(event, (QuotaShowAction) userAction);
+                    groupMsgService.showQuota(event, (QuotaShowAction) userAction);
                     break;
                 case QUOTA_INCREASE:
                 case QUOTA_DECREASE:
-                    botService.changeQuota(event, (QuotaChangeAction) userAction);
+                    groupMsgService.changeQuota(event, (QuotaChangeAction) userAction);
                     break;
                 case QUOTA_EXTRALIFE_ADD:
-                    botService.addExtraLife(event, (QuotaExtraLifeAction) userAction);
+                    groupMsgService.addExtraLife(event, (QuotaExtraLifeAction) userAction);
                 case MSG_TOP5:
-                    botService.showMsgTop5(event);
+                    groupMsgService.showMsgTop5(event);
                 default:
                     break;
             }
@@ -94,13 +97,13 @@ public class BotController {
 
         // 收到单聊消息
         miraiBot.getEventChannel().subscribeAlways(FriendMessageEvent.class, event -> {
-            botService.showMemberQuota(event);
+            groupMsgService.showMemberQuota(event);
 //            botService.showQuotaRank(null);
         });
 
         // 收到陌生人单聊消息
         miraiBot.getEventChannel().subscribeAlways(StrangerMessageEvent.class, event -> {
-            botService.showMyQuota(event);
+            groupMsgService.showMyQuota(event);
         });
 
         miraiBot.login();

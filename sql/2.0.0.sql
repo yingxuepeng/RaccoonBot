@@ -1,3 +1,4 @@
+# grant select,insert,update,delete on bot_group_topic to raccoon@'%'
 CREATE TABLE `bot_admin_action` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `admin_id` bigint(20) unsigned NOT NULL,
@@ -13,10 +14,11 @@ CREATE TABLE `bot_admin_action` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 CREATE TABLE `bot_message` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `sender_id` bigint(20) unsigned NOT NULL,
+  `group_id` bigint(20) NOT NULL,
+  `msg_id` bigint(20) NOT NULL,
   `content` varchar(10000) NOT NULL,
   `label_crtype` tinyint(3) unsigned DEFAULT NULL,
   `label_type` int(10) unsigned DEFAULT NULL,
@@ -29,7 +31,8 @@ CREATE TABLE `bot_message` (
   `is_trainable` bit(1) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
-  KEY `idx_sender_time` (`create_time`,`sender_id`,`label_first`)
+  KEY `idx_sender_time` (`create_time`,`sender_id`,`label_first`),
+  KEY `idx_topic` (`group_id`,`msg_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `bot_script` (
@@ -53,6 +56,21 @@ CREATE TABLE `bot_used_invcode` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   KEY `invcode_idx` (`invcode`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `bot_group_topic` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `group_id` bigint(20) unsigned NOT NULL,
+  `sender_id` bigint(20) unsigned NOT NULL,
+  `msg_start_id` bigint(20) unsigned NOT NULL,
+  `msg_end_id` bigint(20) unsigned DEFAULT NULL,
+  `msg_ignore_ids_json` varchar(2000) CHARACTER SET latin1 NOT NULL,
+  `status` tinyint(4) NOT NULL,
+  `type` int(10) unsigned NOT NULL,
+  `title` varchar(128) CHARACTER SET latin1 NOT NULL,
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `solution` (

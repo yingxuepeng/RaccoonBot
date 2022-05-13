@@ -1,10 +1,7 @@
 package com.raccoon.qqbot.controller;
 
 import com.raccoon.qqbot.config.MiraiConfig;
-import com.raccoon.qqbot.data.action.QuotaChangeAction;
-import com.raccoon.qqbot.data.action.QuotaExtraLifeAction;
-import com.raccoon.qqbot.data.action.QuotaShowAction;
-import com.raccoon.qqbot.data.action.UserAction;
+import com.raccoon.qqbot.data.action.*;
 import com.raccoon.qqbot.service.GroupJoinService;
 import com.raccoon.qqbot.service.GroupMsgService;
 import net.mamoe.mirai.Bot;
@@ -66,6 +63,8 @@ public class BotController {
             }
             // 获取action
             UserAction userAction = UserAction.From(event, miraiInfo);
+
+
             if (userAction == null) {
                 groupMsgService.saveMsg(event);
                 groupMsgService.checkQuota(event);
@@ -94,6 +93,9 @@ public class BotController {
                     break;
                 case MSG_REPEAT_TOP5:
                     groupMsgService.showMsgRepeatTop5(event);
+                    break;
+                case TOPIC_CREATE:
+                    groupMsgService.createTopic(event, (QuoteAction) userAction);
                     break;
                 default:
                     break;

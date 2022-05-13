@@ -6,6 +6,7 @@ import net.mamoe.mirai.contact.MemberPermission;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.PlainText;
+import net.mamoe.mirai.message.data.QuoteReply;
 
 public class UserAction {
     private Type type;
@@ -18,11 +19,19 @@ public class UserAction {
 
 
     public static UserAction From(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
-
-        if (event.getMessage().size() < 3) {
+        if (event.getMessage().size() < 2) {
             return null;
         }
-        if (!(event.getMessage().get(1) instanceof At)) {
+        if ((event.getMessage().get(1) instanceof At)) {
+            return getAtAction(event, miraiInfo);
+        } else if ((event.getMessage().get(1) instanceof QuoteReply)) {
+            return getQuoteAction(event, miraiInfo);
+        }
+        return null;
+    }
+
+    public static UserAction getAtAction(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
+        if (event.getMessage().size() < 3) {
             return null;
         }
         // first is bot
@@ -46,26 +55,14 @@ public class UserAction {
             return null;
         }
         PlainText action = (PlainText) event.getMessage().get(2);
+        String actionStr = action.getContent().trim().toLowerCase();
 
-        // get action type
-        Type type = Type.NONE;
-        String actionStr = action.getContent().trim();
-        for (Type value : Type.values()) {
-            if (value.getKeyword() == null) {
-                continue;
-            }
-            if (actionStr.startsWith(value.getKeyword())) {
-                type = value;
-                break;
-            }
-        }
-
-        if (type == Type.NONE) {
-            return null;
-        }
-
+        Type type = getType(actionStr);
+        // user action
         UserAction userAction = null;
         switch (type) {
+            case NONE:
+                break;
             case QUOTA_SHOW:
                 userAction = new QuotaShowAction();
                 break;
@@ -76,18 +73,106 @@ public class UserAction {
             case QUOTA_EXTRALIFE_ADD:
                 userAction = new QuotaExtraLifeAction();
                 break;
+            case MSG_ALL_TOP5:
+            case MSG_REPEAT_TOP5:
+                // 禁言自己
+            case MUTE_SELF:
+                break;
+
+
+            case TOPIC_CREATE:
+                userAction = new QuoteAction();
+                break;
+            case TOPIC_END:
             default:
-                userAction = new UserAction();
                 break;
         }
-        userAction.type = type;
-        userAction.senderId = event.getSender().getId();
-        userAction.targetId = targetId;
-        userAction.senderPermission = GetPermission(event.getSender());
-        userAction.targetPermission = GetPermission(event.getGroup().get(targetId));
-        userAction.actionStr = actionStr;
+        if (userAction != null) {
+            userAction.type = type;
+            userAction.senderId = event.getSender().getId();
+            userAction.targetId = targetId;
+            userAction.senderPermission = GetPermission(event.getSender());
+            userAction.targetPermission = GetPermission(event.getGroup().get(targetId));
+            userAction.actionStr = actionStr;
+        }
+
 
         return userAction;
+    }
+
+    public static UserAction getQuoteAction(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
+        if (event.getMessage().size() < 4) {
+            return null;
+        }
+        // first is bot
+        QuoteReply quoteReply = (QuoteReply) event.getMessage().get(1);
+
+        // at me
+        if (!(event.getMessage().get(2) instanceof At)) {
+            return null;
+        }
+        At me = (At) event.getMessage().get(2);
+        if (me.getTarget() != miraiInfo.getBotId()) {
+            return null;
+        }
+
+        // action
+        if (!(event.getMessage().get(3) instanceof PlainText)) {
+            return null;
+        }
+        PlainText action = (PlainText) event.getMessage().get(3);
+        String actionStr = action.getContent().trim().toLowerCase();
+        Type type = getType(actionStr);
+
+        long targetId = quoteReply.getSource().getIds()[0];
+        // user action
+        QuoteAction quoteAction = null;
+        switch (type) {
+
+            case TOPIC_CREATE:
+                quoteAction = new QuoteAction();
+                break;
+            case TOPIC_END:
+            default:
+                break;
+        }
+        if (quoteAction != null) {
+            quoteAction.setType(type);
+            quoteAction.setSenderId(event.getSender().getId());
+            quoteAction.setQuoteReply(quoteReply);
+            quoteAction.setActionStr(actionStr);
+            quoteAction.setSenderPermission(GetPermission(event.getSender()));
+        }
+
+        return quoteAction;
+    }
+
+    public static Type getType(String actionStr) {
+        // get action type
+        Type type = Type.NONE;
+        //  equal first
+        for (Type value : Type.values()) {
+            if (value.keywordMatchType != KeywordMatchType.EQUAL) {
+                continue;
+            }
+            if (actionStr.equals(value.getKeyword())) {
+                type = value;
+                break;
+            }
+        }
+        // is not then  start with
+        if (type == Type.NONE) {
+            for (Type value : Type.values()) {
+                if (value.keywordMatchType != KeywordMatchType.START_WITH) {
+                    continue;
+                }
+                if (actionStr.startsWith(value.getKeyword())) {
+                    type = value;
+                    break;
+                }
+            }
+        }
+        return type;
     }
 
     public static Permission GetPermission(Member member) {
@@ -179,25 +264,37 @@ public class UserAction {
     }
 
     public enum Type {
-        NONE(0, null, null),
-        QUOTA_SHOW(1, "看", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR, Permission.CODING_TIGER, Permission.MEMBER}),
-        QUOTA_INCREASE(2, "夸", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
-        QUOTA_DECREASE(3, "干", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
-        QUOTA_EXTRALIFE_ADD(4, "续", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
+        NONE(0, null, KeywordMatchType.NONE, null),
+        QUOTA_SHOW(1, "看", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
+                Permission.CODING_EMPEROR, Permission.CODING_TIGER, Permission.MEMBER}),
+        QUOTA_INCREASE(2, "夸", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
+                Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
+        QUOTA_DECREASE(3, "干", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
+                Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
+        QUOTA_EXTRALIFE_ADD(4, "续", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
+                Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
 
-        MSG_ALL_TOP5(5, "MATOP5", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
-        MSG_REPEAT_TOP5(6, "MRTOP5", new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
+        MSG_ALL_TOP5(5, "matop5", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
+                Permission.CODING_EMPEROR}),
+        MSG_REPEAT_TOP5(6, "mrtop5", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
+                Permission.CODING_EMPEROR}),
         // 禁言自己
-        MUTE_SELF(7, "怼我", new Permission[]{Permission.CODING_EMPEROR, Permission.CODING_TIGER, Permission.MEMBER});
+        MUTE_SELF(7, "怼我", KeywordMatchType.EQUAL, new Permission[]{Permission.CODING_EMPEROR, Permission.CODING_TIGER, Permission.MEMBER}),
+
+        TOPIC_CREATE(8, "mark", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
+        TOPIC_END(9, "marke", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR});
 
         private int type;
+        private KeywordMatchType keywordMatchType;
         private Permission[] permissionArray;
         private String keyword;
 
-        Type(int type, String keyword, Permission[] permissionArray) {
+        Type(int type, String keyword, KeywordMatchType keywordMatchType, Permission[] permissionArray) {
             this.type = type;
-            this.permissionArray = permissionArray;
             this.keyword = keyword;
+            this.keywordMatchType = keywordMatchType;
+            this.permissionArray = permissionArray;
+
         }
 
         public int getType() {
@@ -233,5 +330,12 @@ public class UserAction {
             }
             return false;
         }
+    }
+
+    private enum KeywordMatchType {
+        NONE,
+        EQUAL,
+        START_WITH,
+        REGEX,
     }
 }

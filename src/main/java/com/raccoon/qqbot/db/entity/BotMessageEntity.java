@@ -12,7 +12,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author pyx
- * @since 2022-05-09
+ * @since 2022-05-13
  */
 @TableName("bot_message")
 public class BotMessageEntity implements Serializable {
@@ -23,6 +23,10 @@ public class BotMessageEntity implements Serializable {
     private Long id;
 
     private Long senderId;
+
+    private Long groupId;
+
+    private Long msgId;
 
     private String content;
 
@@ -57,6 +61,20 @@ public class BotMessageEntity implements Serializable {
 
     public void setSenderId(Long senderId) {
         this.senderId = senderId;
+    }
+    public Long getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(Long groupId) {
+        this.groupId = groupId;
+    }
+    public Long getMsgId() {
+        return msgId;
+    }
+
+    public void setMsgId(Long msgId) {
+        this.msgId = msgId;
     }
     public String getContent() {
         return content;
@@ -134,6 +152,8 @@ public class BotMessageEntity implements Serializable {
         return "BotMessageEntity{" +
             "id=" + id +
             ", senderId=" + senderId +
+            ", groupId=" + groupId +
+            ", msgId=" + msgId +
             ", content=" + content +
             ", labelCrtype=" + labelCrtype +
             ", labelType=" + labelType +

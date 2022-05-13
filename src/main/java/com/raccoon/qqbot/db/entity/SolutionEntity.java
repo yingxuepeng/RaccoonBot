@@ -13,7 +13,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author pyx
- * @since 2022-05-09
+ * @since 2022-05-13
  */
 @TableName("solution")
 public class SolutionEntity implements Serializable {

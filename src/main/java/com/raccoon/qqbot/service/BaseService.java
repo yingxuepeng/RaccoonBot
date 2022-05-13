@@ -41,6 +41,8 @@ public abstract class BaseService {
     protected BotScriptDao botScriptDao;
     @Resource
     protected BotMessageDao botMessageDao;
+    @Resource
+    protected BotGroupTopicDao botGroupTopicDao;
 
 
     @PostConstruct

@@ -3,13 +3,11 @@ package com.raccoon.qqbot.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.raccoon.qqbot.data.BotUserQuotaVo;
 import com.raccoon.qqbot.data.ScriptResultVo;
-import com.raccoon.qqbot.data.action.QuotaChangeAction;
-import com.raccoon.qqbot.data.action.QuotaExtraLifeAction;
-import com.raccoon.qqbot.data.action.QuotaShowAction;
-import com.raccoon.qqbot.data.action.UserAction;
+import com.raccoon.qqbot.data.action.*;
 import com.raccoon.qqbot.db.consts.BotAdminActionConsts;
 import com.raccoon.qqbot.db.consts.BotMessageConsts;
 import com.raccoon.qqbot.db.entity.BotAdminActionEntity;
+import com.raccoon.qqbot.db.entity.BotGroupTopicEntity;
 import com.raccoon.qqbot.db.entity.BotMessageEntity;
 import com.raccoon.qqbot.db.entity.BotScriptEntity;
 import com.raccoon.qqbot.exception.ReturnedException;
@@ -18,6 +16,7 @@ import com.tencentcloudapi.common.exception.TencentCloudSDKException;
 import com.tencentcloudapi.nlp.v20190408.models.ClassificationResult;
 import com.tencentcloudapi.nlp.v20190408.models.TextClassificationResponse;
 import net.mamoe.mirai.contact.Group;
+import net.mamoe.mirai.contact.MemberPermission;
 import net.mamoe.mirai.contact.NormalMember;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
@@ -257,6 +256,10 @@ public class GroupMsgService extends BaseService {
         long memberId = event.getSender().getId();
         BotMessageEntity entity = new BotMessageEntity();
 
+        MessageSource source = (MessageSource) event.getMessage().get(0);
+        int msgId = source.getIds()[0];
+        entity.setGroupId(event.getGroup().getId());
+        entity.setMsgId((long) msgId);
         // msg save
         StringBuilder msgStr = new StringBuilder();
         Boolean isTrainableMsg = getGroupMsgString(event, msgStr);
@@ -335,6 +338,9 @@ public class GroupMsgService extends BaseService {
     }
 
     public void checkQuota(GroupMessageEvent event) {
+        if (event.getSender().getPermission() != MemberPermission.MEMBER) {
+            return;
+        }
         long memberId = event.getSender().getId();
         ScriptResultVo resultVo = getMemberMuteInfo(memberId);
 
@@ -389,5 +395,18 @@ public class GroupMsgService extends BaseService {
             entity.setIsTrainable(false);
         }
         botMessageDao.updateById(entity);
+    }
+
+    public void createTopic(GroupMessageEvent event, QuoteAction action) {
+        int msgId = action.getQuoteReply().getSource().getIds()[0];
+        BotMessageEntity messageEntity = botMessageDao.selectByMsgId(msgId);
+        if (messageEntity == null) {
+            return;
+        }
+
+        BotGroupTopicEntity botGroupTopicEntity = botGroupTopicDao.createEntity(messageEntity);
+        botGroupTopicDao.insert(botGroupTopicEntity);
+
+        event.getGroup().sendMessage(new PlainText("主题 “" + botGroupTopicEntity.getTitle()) + "” 已创建");
     }
 }

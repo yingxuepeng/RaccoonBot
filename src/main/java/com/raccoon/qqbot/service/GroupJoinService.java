@@ -80,9 +80,9 @@ public class GroupJoinService extends BaseService {
             return "码猴";
         } else if (problemId == 1002) {
             return "码农";
+        } else if (problemId == 1003) {
+            return "码虎";
         }
         return "关系户";
     }
-
-
 }

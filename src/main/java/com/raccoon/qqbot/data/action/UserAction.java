@@ -75,15 +75,14 @@ public class UserAction {
                 break;
             case MSG_ALL_TOP5:
             case MSG_REPEAT_TOP5:
-                // 禁言自己
+                userAction = new UserAction();
+                break;
+            case TOPIC_LIST:
+                userAction = new UserAction();
+                break;
+            // 禁言自己
             case MUTE_SELF:
                 break;
-
-
-            case TOPIC_CREATE:
-                userAction = new QuoteAction();
-                break;
-            case TOPIC_END:
             default:
                 break;
         }
@@ -132,7 +131,6 @@ public class UserAction {
             case TOPIC_CREATE:
                 quoteAction = new QuoteAction();
                 break;
-            case TOPIC_END:
             default:
                 break;
         }
@@ -282,7 +280,8 @@ public class UserAction {
         MUTE_SELF(7, "怼我", KeywordMatchType.EQUAL, new Permission[]{Permission.CODING_EMPEROR, Permission.CODING_TIGER, Permission.MEMBER}),
 
         TOPIC_CREATE(8, "mark", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
-        TOPIC_END(9, "marke", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR});
+        TOPIC_LIST(9, "marklist", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR,
+                Permission.CODING_TIGER, Permission.MEMBER});
 
         private int type;
         private KeywordMatchType keywordMatchType;

@@ -4,6 +4,10 @@ import com.raccoon.qqbot.db.BotBaseMapper;
 import com.raccoon.qqbot.db.consts.BotGroupTopicConsts;
 import com.raccoon.qqbot.db.entity.BotGroupTopicEntity;
 import com.raccoon.qqbot.db.entity.BotMessageEntity;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 public interface BotGroupTopicDao extends BotBaseMapper<BotGroupTopicEntity> {
     default BotGroupTopicEntity createEntity(BotMessageEntity messageEntity) {
@@ -20,4 +24,10 @@ public interface BotGroupTopicDao extends BotBaseMapper<BotGroupTopicEntity> {
         entity.setType(BotGroupTopicConsts.TYPE_COMMON);
         return entity;
     }
+
+    @Select("select * from bot_group_topic order by id desc limit = #{limit}")
+    List<BotGroupTopicEntity> getTopicLatestList(@Param("limit") int limit);
+
+    @Select("select * from bot_group_topic where topic_key = #{topicKey} limit 1")
+    BotGroupTopicEntity getTopicDetail(@Param("topicKey") String topicKey);
 }

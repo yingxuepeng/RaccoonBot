@@ -12,7 +12,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author pyx
- * @since 2022-05-13
+ * @since 2022-05-14
  */
 @TableName("bot_group_topic")
 public class BotGroupTopicEntity implements Serializable {
@@ -31,6 +31,8 @@ public class BotGroupTopicEntity implements Serializable {
     private Long msgEndId;
 
     private String msgIgnoreIdsJson;
+
+    private String topicKey;
 
     private Byte status;
 
@@ -82,6 +84,13 @@ public class BotGroupTopicEntity implements Serializable {
     public void setMsgIgnoreIdsJson(String msgIgnoreIdsJson) {
         this.msgIgnoreIdsJson = msgIgnoreIdsJson;
     }
+    public String getTopicKey() {
+        return topicKey;
+    }
+
+    public void setTopicKey(String topicKey) {
+        this.topicKey = topicKey;
+    }
     public Byte getStatus() {
         return status;
     }
@@ -120,6 +129,7 @@ public class BotGroupTopicEntity implements Serializable {
             ", msgStartId=" + msgStartId +
             ", msgEndId=" + msgEndId +
             ", msgIgnoreIdsJson=" + msgIgnoreIdsJson +
+            ", topicKey=" + topicKey +
             ", status=" + status +
             ", type=" + type +
             ", title=" + title +

@@ -12,7 +12,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author pyx
- * @since 2022-05-13
+ * @since 2022-05-14
  */
 @TableName("bot_admin_action")
 public class BotAdminActionEntity implements Serializable {

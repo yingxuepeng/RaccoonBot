@@ -258,6 +258,8 @@ public class GroupMsgService extends BaseService {
 
         MessageSource source = (MessageSource) event.getMessage().get(0);
         int msgId = source.getIds()[0];
+        entity.setSenderId(memberId);
+        entity.setSenderNick(event.getSenderName());
         entity.setGroupId(event.getGroup().getId());
         entity.setMsgId((long) msgId);
         // msg save
@@ -281,7 +283,6 @@ public class GroupMsgService extends BaseService {
             }
         }
 
-        entity.setSenderId(memberId);
         entity.setContent(msg);
         entity.setIsDel(false);
         entity.setIsTrainable(isTrainableMsg);

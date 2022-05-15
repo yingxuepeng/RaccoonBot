@@ -4,7 +4,7 @@ import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import TopicInfo from "./routes/topic/TopicInfo";
+import TopicInfoPage from "./routes/topic/TopicInfoPage";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -12,8 +12,8 @@ const root = ReactDOM.createRoot(
 root.render(
   <BrowserRouter>
     <Routes>
-      <Route path="/" element={<App />} />
-      <Route path="topic/info" element={<TopicInfo />} />
+      <Route path="/web/" element={<App />} />
+      <Route path="/web/topic/info" element={<TopicInfoPage />} />
     </Routes>
   </BrowserRouter>
 );

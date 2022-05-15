@@ -4,6 +4,7 @@ import com.raccoon.qqbot.config.MiraiConfig;
 import com.raccoon.qqbot.data.action.*;
 import com.raccoon.qqbot.service.GroupJoinService;
 import com.raccoon.qqbot.service.GroupMsgService;
+import com.raccoon.qqbot.service.TopicService;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.events.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,8 @@ public class BotController {
     private GroupMsgService groupMsgService;
     @Autowired
     private GroupJoinService groupJoinService;
-
+    @Autowired
+    private TopicService topicService;
 
     @PostConstruct
     public void init() {
@@ -96,6 +98,9 @@ public class BotController {
                     break;
                 case TOPIC_CREATE:
                     groupMsgService.createTopic(event, (QuoteAction) userAction);
+                    break;
+                case TOPIC_LIST:
+                    topicService.sendTopicList(event, userAction);
                     break;
                 default:
                     break;

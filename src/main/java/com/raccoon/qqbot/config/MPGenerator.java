@@ -96,6 +96,9 @@ public class MPGenerator {
             if (t.contains("tinyint(3)") || t.contains("tinyint(4)")) {
                 return DbColumnType.BYTE;
             }
+            if (t.contains("timestamp")) {
+                return DbColumnType.TIMESTAMP;
+            }
             return super.processTypeConvert(globalConfig, fieldType);
         }
     }

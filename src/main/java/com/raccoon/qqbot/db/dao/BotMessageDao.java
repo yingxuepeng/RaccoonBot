@@ -27,4 +27,8 @@ public interface BotMessageDao extends BotBaseMapper<BotMessageEntity> {
     @Select("select * from bot_message where msg_id = #{msgId} limit 1")
     BotMessageEntity selectByMsgId(@Param("msgId") long msgId);
 
+
+    @Select("select * from bot_message where msg_id >= #{msgId} limit #{limit}")
+    List<BotMessageEntity> selectTopicMsgList(@Param("msgId") long msgId, @Param("msgId") int limit);
+
 }

@@ -7,8 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
 
@@ -20,10 +19,10 @@ public class ScheduleService {
 
     @Scheduled(cron = "0 */10 * * * *")
     public void expireAdminAction() {
-        LocalDateTime now = new Date(System.currentTimeMillis()).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        Timestamp now = new Timestamp(new Date(System.currentTimeMillis()).getTime());
         List<BotAdminActionEntity> actionEntities = botAdminActionDao.selectByStatus(BotAdminActionConsts.STATUS_NORMAL);
         for (BotAdminActionEntity entity : actionEntities) {
-            if (entity.getExpireTime().isBefore(now)) {
+            if (entity.getExpireTime().before(now)) {
                 entity.setStatus(BotAdminActionConsts.STATUS_EXPIRE);
                 botAdminActionDao.updateById(entity);
             }

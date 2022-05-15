@@ -2,8 +2,8 @@ package com.raccoon.qqbot.db.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
+import java.sql.Timestamp;
 import com.baomidou.mybatisplus.annotation.TableId;
-import java.time.LocalDateTime;
 import java.io.Serializable;
 
 /**
@@ -12,7 +12,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author pyx
- * @since 2022-05-14
+ * @since 2022-05-15
  */
 @TableName("bot_admin_action")
 public class BotAdminActionEntity implements Serializable {
@@ -36,9 +36,9 @@ public class BotAdminActionEntity implements Serializable {
 
     private Integer quotaStep;
 
-    private LocalDateTime createTime;
+    private Timestamp createTime;
 
-    private LocalDateTime expireTime;
+    private Timestamp expireTime;
 
     private Boolean isDel;
 
@@ -98,18 +98,18 @@ public class BotAdminActionEntity implements Serializable {
     public void setQuotaStep(Integer quotaStep) {
         this.quotaStep = quotaStep;
     }
-    public LocalDateTime getCreateTime() {
+    public Timestamp getCreateTime() {
         return createTime;
     }
 
-    public void setCreateTime(LocalDateTime createTime) {
+    public void setCreateTime(Timestamp createTime) {
         this.createTime = createTime;
     }
-    public LocalDateTime getExpireTime() {
+    public Timestamp getExpireTime() {
         return expireTime;
     }
 
-    public void setExpireTime(LocalDateTime expireTime) {
+    public void setExpireTime(Timestamp expireTime) {
         this.expireTime = expireTime;
     }
     public Boolean getIsDel() {

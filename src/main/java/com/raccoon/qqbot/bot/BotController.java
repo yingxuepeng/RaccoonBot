@@ -1,4 +1,4 @@
-package com.raccoon.qqbot.controller;
+package com.raccoon.qqbot.bot;
 
 import com.raccoon.qqbot.config.MiraiConfig;
 import com.raccoon.qqbot.data.action.*;

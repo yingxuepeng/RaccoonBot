@@ -3,6 +3,7 @@ package com.raccoon.qqbot.db.entity;
 import java.math.BigDecimal;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
+import java.sql.Timestamp;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.time.LocalDateTime;
 import java.io.Serializable;
@@ -13,7 +14,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author pyx
- * @since 2022-05-14
+ * @since 2022-05-15
  */
 @TableName("solution")
 public class SolutionEntity implements Serializable {
@@ -49,7 +50,7 @@ public class SolutionEntity implements Serializable {
 
     private Integer codeLength;
 
-    private LocalDateTime judgetime;
+    private Timestamp judgetime;
 
     private BigDecimal passRate;
 
@@ -157,11 +158,11 @@ public class SolutionEntity implements Serializable {
     public void setCodeLength(Integer codeLength) {
         this.codeLength = codeLength;
     }
-    public LocalDateTime getJudgetime() {
+    public Timestamp getJudgetime() {
         return judgetime;
     }
 
-    public void setJudgetime(LocalDateTime judgetime) {
+    public void setJudgetime(Timestamp judgetime) {
         this.judgetime = judgetime;
     }
     public BigDecimal getPassRate() {

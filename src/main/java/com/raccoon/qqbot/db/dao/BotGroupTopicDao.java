@@ -25,9 +25,9 @@ public interface BotGroupTopicDao extends BotBaseMapper<BotGroupTopicEntity> {
         return entity;
     }
 
-    @Select("select * from bot_group_topic order by id desc limit = #{limit}")
+    @Select("select * from bot_group_topic order by id desc limit #{limit}")
     List<BotGroupTopicEntity> getTopicLatestList(@Param("limit") int limit);
 
     @Select("select * from bot_group_topic where topic_key = #{topicKey} limit 1")
-    BotGroupTopicEntity getTopicDetail(@Param("topicKey") String topicKey);
+    BotGroupTopicEntity getTopicByKey(@Param("topicKey") String topicKey);
 }

@@ -2,8 +2,8 @@ package com.raccoon.qqbot.db.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
+import java.sql.Timestamp;
 import com.baomidou.mybatisplus.annotation.TableId;
-import java.time.LocalDateTime;
 import java.io.Serializable;
 
 /**
@@ -12,7 +12,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author pyx
- * @since 2022-05-14
+ * @since 2022-05-15
  */
 @TableName("bot_used_invcode")
 public class BotUsedInvcodeEntity implements Serializable {
@@ -28,7 +28,7 @@ public class BotUsedInvcodeEntity implements Serializable {
 
     private String invcode;
 
-    private LocalDateTime createTime;
+    private Timestamp createTime;
 
     private Boolean isDel;
 
@@ -60,11 +60,11 @@ public class BotUsedInvcodeEntity implements Serializable {
     public void setInvcode(String invcode) {
         this.invcode = invcode;
     }
-    public LocalDateTime getCreateTime() {
+    public Timestamp getCreateTime() {
         return createTime;
     }
 
-    public void setCreateTime(LocalDateTime createTime) {
+    public void setCreateTime(Timestamp createTime) {
         this.createTime = createTime;
     }
     public Boolean getIsDel() {

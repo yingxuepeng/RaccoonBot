@@ -31,8 +31,7 @@ const MIN_QUOTA = 20;
  *
  * @param dataStr: {
  * msgBriefList, // [MsgBrief]
- * duration, // mute duration
- * adminCnt //mute admin count
+ * actionList, //[AdminAction]
  * }
  * @returns should mute
  */

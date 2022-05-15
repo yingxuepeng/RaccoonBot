@@ -31,8 +31,7 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -113,8 +112,7 @@ public class GroupMsgService extends BaseService {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(System.currentTimeMillis());
         calendar.add(Calendar.MONTH, 2);
-        LocalDateTime localDateTime = calendar.getTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-        botAdminActionEntity.setExpireTime(localDateTime);
+        botAdminActionEntity.setExpireTime(new Timestamp(calendar.getTime().getTime()));
 
         // quota cnt
         QuotaChangeAction.Range range = userAction.getRange();
@@ -168,8 +166,7 @@ public class GroupMsgService extends BaseService {
             Calendar calendar = Calendar.getInstance();
             calendar.setTimeInMillis(System.currentTimeMillis());
             calendar.add(Calendar.DATE, 1);
-            LocalDateTime localDateTime = calendar.getTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-            botAdminActionEntity.setExpireTime(localDateTime);
+            botAdminActionEntity.setExpireTime(new Timestamp(calendar.getTime().getTime()));
         } else {
             curQuotaCnt += botAdminActionEntity.getQuotaCnt();
         }

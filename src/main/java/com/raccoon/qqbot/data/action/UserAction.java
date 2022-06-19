@@ -75,9 +75,9 @@ public class UserAction {
                 break;
             case MSG_ALL_TOP5:
             case MSG_REPEAT_TOP5:
-                userAction = new UserAction();
-                break;
             case TOPIC_LIST:
+            case CONFIG_HOLIDAY:
+            case CONFIG_WORK:
                 userAction = new UserAction();
                 break;
             // 禁言自己
@@ -281,7 +281,12 @@ public class UserAction {
 
         TOPIC_CREATE(8, "mark", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
         TOPIC_LIST(9, "marklist", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR,
-                Permission.CODING_TIGER, Permission.MEMBER});
+                Permission.CODING_TIGER, Permission.MEMBER}),
+
+
+        // holiday
+        CONFIG_HOLIDAY(10, "过节", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR}),
+        CONFIG_WORK(11, "上班", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR});
 
         private int type;
         private KeywordMatchType keywordMatchType;

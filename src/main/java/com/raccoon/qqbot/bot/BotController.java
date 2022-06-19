@@ -102,6 +102,9 @@ public class BotController {
                 case TOPIC_LIST:
                     topicService.sendTopicList(event, userAction);
                     break;
+                case CONFIG_HOLIDAY:
+                case CONFIG_WORK:
+                    groupMsgService.setIsHoliday(event, userAction);
                 default:
                     break;
             }

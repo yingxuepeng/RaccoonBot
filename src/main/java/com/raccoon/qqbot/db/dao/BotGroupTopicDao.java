@@ -24,7 +24,15 @@ public interface BotGroupTopicDao extends BotBaseMapper<BotGroupTopicEntity> {
         entity.setStatus(BotGroupTopicConsts.STATUS_CREATED);
         entity.setType(BotGroupTopicConsts.TYPE_COMMON);
         // topic key
-        entity.setTopicKey(topicKeyGenerator());
+        String key = topicKeyGenerator();
+        final int maxTryCnt = 10;
+        int tryCnt = 0;
+        while (getTopicByKey(key) != null && tryCnt < maxTryCnt) {
+            tryCnt++;
+            key = topicKeyGenerator();
+        }
+
+        entity.setTopicKey(key);
         return entity;
     }
 

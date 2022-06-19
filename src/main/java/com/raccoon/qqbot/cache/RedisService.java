@@ -1,5 +1,6 @@
 package com.raccoon.qqbot.cache;
 
+import com.raccoon.qqbot.utils.TimeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -12,8 +13,9 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class RedisService {
 
-    public static final int CACHE_TIME = 86400 * 1000 * 30;
     public static final String MSGLIST_KEY = "MSG_LRU";
+
+    public static final String ISHOLIDAY_KEY = "ISHOLIDAY";
     private SimpleDateFormat dateFormat;
 
     @PostConstruct
@@ -45,17 +47,17 @@ public class RedisService {
             redisTemplate.opsForZSet().popMin(MSGLIST_KEY, cnt - limit);
         }
     }
-//    public List<Long> getMemberMsgTimeList(long memberId) {
-//        long ts = System.currentTimeMillis();
-//        List<String> msgTimeList = redisTemplate.opsForList().range(getMsgListKey(memberId, ts), 0, -1);
-//        List<Long> longList = msgTimeList.stream().map(Long::parseLong).collect(Collectors.toList());
-//        return longList;
-//    }
 
-    public void putMsgTime(long memberId) {
-        long ts = System.currentTimeMillis();
-        String key = getMsgListKey(memberId, ts);
-        redisTemplate.opsForList().leftPush(key, ts + "");
-        redisTemplate.expire(key, CACHE_TIME, TimeUnit.MILLISECONDS);
+    public void setIsHoliday(boolean isHoliday) {
+        long remainSecond = TimeUtils.GetTodayRemainSecond();
+        redisTemplate.opsForValue().set(ISHOLIDAY_KEY, isHoliday + "", remainSecond, TimeUnit.SECONDS);
+    }
+
+    public boolean getIsHoliday() {
+        String isHolidayStr = redisTemplate.opsForValue().get(ISHOLIDAY_KEY);
+        if (isHolidayStr == null) {
+            return false;
+        }
+        return Boolean.parseBoolean(isHolidayStr);
     }
 }

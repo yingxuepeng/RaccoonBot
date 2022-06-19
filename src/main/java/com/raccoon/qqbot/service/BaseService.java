@@ -1,5 +1,6 @@
 package com.raccoon.qqbot.service;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raccoon.qqbot.cache.RedisService;
 import com.raccoon.qqbot.config.MiraiConfig;
@@ -48,6 +49,7 @@ public abstract class BaseService {
     @PostConstruct
     protected void init() {
         objectMapper = new ObjectMapper();
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
 

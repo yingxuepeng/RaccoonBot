@@ -2,6 +2,7 @@ package com.raccoon.qqbot.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.raccoon.qqbot.data.BotUserQuotaVo;
+import com.raccoon.qqbot.data.MsgConfig;
 import com.raccoon.qqbot.data.ScriptResultVo;
 import com.raccoon.qqbot.data.action.*;
 import com.raccoon.qqbot.db.consts.BotAdminActionConsts;
@@ -32,10 +33,7 @@ import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Timestamp;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class GroupMsgService extends BaseService {
@@ -58,34 +56,40 @@ public class GroupMsgService extends BaseService {
         QuotaShowAction.Stat stat = userAction.getStat(actionEntityList);
         final String cHeart = "\u2764";
         final String cBomb = "\uD83D\uDCA3";
-        String quotaSumStr = "加减：";
-        if (stat.getHeartCnt() > stat.getBombCnt()) {
-            for (int i = 0; i < stat.getHeartCnt() - stat.getBombCnt(); i++) {
-                quotaSumStr += cHeart;
+        final String cLife = "\uD83D\uDC53";
+        String quotaSumStr = cHeart + "x" + stat.getHeartCnt() + " " + cBomb + "x" + stat.getBombCnt() + " " + cLife + stat.getLifeCnt() + "\n";
+
+        String quotaDetailStr = "详情：";
+        for (BotAdminActionEntity action : actionEntityList) {
+
+            if (action.getType() == BotAdminActionConsts.TYPE_QUOTA) {
+                if (action.getQuotaCnt() > 0) {
+                    quotaDetailStr += "\n" + cHeart + "x" + action.getQuotaCnt();
+                } else if (action.getQuotaCnt() < 0) {
+                    quotaDetailStr += "\n" + cBomb + "x" + (-action.getQuotaCnt());
+                }
+            } else if (action.getType() == BotAdminActionConsts.TYPE_QUOTA_EXTRA) {
+                if (action.getQuotaCnt() > 0) {
+                    quotaDetailStr += "\n" + cLife + "x" + action.getQuotaCnt();
+                }
             }
-        } else if (stat.getHeartCnt() < stat.getBombCnt()) {
-            for (int i = 0; i < stat.getBombCnt() - stat.getHeartCnt(); i++) {
-                quotaSumStr += cBomb;
-            }
-        } else {
-            quotaSumStr += "无";
         }
 
-        String quotaDetailStr = "详情：" + cHeart + "x" + stat.getHeartCnt() + " , " + cBomb + "x" + stat.getBombCnt();
         MessageChainBuilder builder = new MessageChainBuilder();
         builder.append(new At(userAction.getTargetId()));
         builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgQuota() + "\n"));
-        builder.append(new PlainText(quotaSumStr + "\n"));
-        builder.append(new PlainText(quotaDetailStr + "\n"));
+        builder.append(new PlainText(quotaSumStr));
+        builder.append(new PlainText(quotaDetailStr));
         event.getGroup().sendMessage(builder.build());
     }
 
     public void changeQuota(GroupMessageEvent event, QuotaChangeAction userAction) {
         // 无法禁言管理员，所以不用操作quota
-        if (!userAction.getTargetPermission().lessThan(UserAction.Permission.ADMINISTRATOR)) {
-            sendNoPermissionMessage(event.getGroup());
-            return;
-        }
+        // 但是操作了也无所谓
+//        if (!userAction.getTargetPermission().lessThan(UserAction.Permission.ADMINISTRATOR)) {
+//            sendNoPermissionMessage(event.getGroup());
+//            return;
+//        }
         BotAdminActionEntity botAdminActionEntity = botAdminActionDao.selectByAdminMemberStatus(userAction.getSenderId(), userAction.getTargetId(),
                 BotAdminActionConsts.STATUS_NORMAL, BotAdminActionConsts.TYPE_QUOTA);
         // quota step
@@ -139,14 +143,20 @@ public class GroupMsgService extends BaseService {
             botAdminActionDao.insert(botAdminActionEntity);
         }
         sendQuotaInfo(event.getGroup(), hintStr, userAction.getTargetId());
+        if (deltaQuotaCnt > 0) {
+            NormalMember normalMember = event.getGroup().getMembers().get(userAction.getTargetId());
+            if (normalMember.isMuted()) {
+                normalMember.unmute();
+            }
+        }
     }
 
     public void addExtraLife(GroupMessageEvent event, QuotaExtraLifeAction userAction) {
         // 无法禁言管理员，所以不用操作quota
-        if (!userAction.getTargetPermission().lessThan(UserAction.Permission.ADMINISTRATOR)) {
-            sendNoPermissionMessage(event.getGroup());
-            return;
-        }
+//        if (!userAction.getTargetPermission().lessThan(UserAction.Permission.ADMINISTRATOR)) {
+//            sendNoPermissionMessage(event.getGroup());
+//            return;
+//        }
         BotAdminActionEntity botAdminActionEntity = botAdminActionDao.selectByAdminMemberStatus(userAction.getSenderId(), userAction.getTargetId(),
                 BotAdminActionConsts.STATUS_NORMAL, BotAdminActionConsts.TYPE_QUOTA_EXTRA);
         // quota step
@@ -210,12 +220,30 @@ public class GroupMsgService extends BaseService {
     private ScriptResultVo getMemberMuteInfo(long memberId) {
         // 暂时写死
         final long scriptId = 1;
-        List<BotAdminActionEntity> actionList = botAdminActionDao.selectByMemberScriptStatus(memberId, scriptId, BotAdminActionConsts.STATUS_NORMAL);
-        BotScriptEntity botScriptEntity = botScriptDao.selectById(scriptId);
-        List<BotMessageEntity> msgBriefList = botMessageDao.selectMessageBrief(memberId, getTodayMidnight());
         HashMap<String, Object> data = new HashMap<>();
-        data.put("actionList", actionList);
-        data.put("msgBriefList", msgBriefList);
+        {
+            List<BotAdminActionEntity> actionList = botAdminActionDao.selectByMemberScriptStatus(memberId, scriptId, BotAdminActionConsts.STATUS_NORMAL);
+            if (actionList == null) {
+                actionList = new ArrayList<>();
+            }
+            data.put("actionList", actionList);
+        }
+
+        {
+            List<BotMessageEntity> msgBriefList = botMessageDao.selectMessageBrief(memberId, getTodayMidnight());
+            if (msgBriefList == null) {
+                msgBriefList = new ArrayList<>();
+            }
+            data.put("msgBriefList", msgBriefList);
+        }
+
+        {
+            MsgConfig msgConfig = new MsgConfig();
+            msgConfig.setIsHoliday(redisService.getIsHoliday());
+            data.put("msgConfig", msgConfig);
+        }
+
+        BotScriptEntity botScriptEntity = botScriptDao.selectById(scriptId);
         String resultStr = runFileScript(botScriptEntity, data);
         try {
             return objectMapper.readValue(resultStr, ScriptResultVo.class);
@@ -235,15 +263,20 @@ public class GroupMsgService extends BaseService {
             Invocable invocable = (Invocable) jsEngine;
 
             String dataStr = objectMapper.writeValueAsString(data);
+            System.out.println(dataStr);
             result = (String) invocable.invokeFunction(scriptEntity.getScriptEntrance(), dataStr);
             return result;
         } catch (ScriptException e) {
+            e.printStackTrace();
             throw new ReturnedException(ServiceError.JSEXEC_ERROR);
         } catch (NoSuchMethodException e) {
+            e.printStackTrace();
             throw new ReturnedException(ServiceError.JSEXEC_ERROR);
         } catch (JsonProcessingException e) {
+            e.printStackTrace();
             throw new ReturnedException(ServiceError.JSEXEC_ERROR);
         } catch (IOException e) {
+            e.printStackTrace();
             throw new ReturnedException(ServiceError.JSEXEC_ERROR);
         }
     }
@@ -406,5 +439,15 @@ public class GroupMsgService extends BaseService {
         botGroupTopicDao.insert(botGroupTopicEntity);
 
         event.getGroup().sendMessage(new PlainText("主题 “" + botGroupTopicEntity.getTitle()) + "” 已创建");
+    }
+
+    public void setIsHoliday(GroupMessageEvent event, UserAction action) {
+        if (action.getType() == UserAction.Type.CONFIG_HOLIDAY) {
+            redisService.setIsHoliday(true);
+            event.getGroup().sendMessage("过节啦~~~");
+        } else if (action.getType() == UserAction.Type.CONFIG_WORK) {
+            redisService.setIsHoliday(false);
+            event.getGroup().sendMessage("上班嘞...");
+        }
     }
 }

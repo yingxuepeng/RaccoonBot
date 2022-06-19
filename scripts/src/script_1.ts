@@ -3,6 +3,7 @@
 interface Sc1Data {
   msgBriefList: MsgBrief[];
   actionList: AdminAction[];
+  msgConfig: MsgConfig;
 }
 interface AdminAction {
   adminId: number;
@@ -16,6 +17,9 @@ interface MsgBrief {
   labelFirst?: string;
   labelSecond?: string;
 }
+interface MsgConfig {
+  isHoliday?: boolean;
+}
 // result
 interface QuotaResult {
   shouldMute: boolean;
@@ -23,10 +27,17 @@ interface QuotaResult {
   msgCnt: number;
   msgQuota: number;
 }
-// const
-const BASE_QUOTA = 150;
-const MIN_QUOTA = 20;
+// quota const
+const BASE_QUOTA = 100;
+const MIN_QUOTA = 10;
+const HOLIDAY_QUOTA_MULTIPLIER = 3;
 
+// classifier const
+const CLASS_REPEAT = '复读';
+const CLASS_REPEAT_SCORE = 1.5;
+
+const CLASS_TECH = '科技';
+const CLASS_TECH_SCORE = 0.5;
 /**
  *
  * @param dataStr: {
@@ -41,14 +52,29 @@ function shouldMute(dataStr: string): string {
   // change quota
   let msgQuota = BASE_QUOTA;
 
-  for (let index = 0; index < data.actionList.length; index++) {
-    const action = data.actionList[index];
+  for (let actionIdx = 0; actionIdx < data.actionList.length; actionIdx++) {
+    const action = data.actionList[actionIdx];
     msgQuota += action.quotaCnt * action.quotaStep;
   }
   if (msgQuota < MIN_QUOTA) {
     msgQuota = MIN_QUOTA;
   }
-  let result: QuotaResult = { shouldMute: false, msgCnt: data.msgBriefList.length, msgQuota };
+  if (data.msgConfig.isHoliday) {
+    msgQuota *= HOLIDAY_QUOTA_MULTIPLIER;
+  }
+
+  let msgCnt = 0;
+  for (let briefIdx = 0; briefIdx < data.msgBriefList.length; briefIdx++) {
+    const msg = data.msgBriefList[briefIdx];
+    if (msg.labelFirst == CLASS_REPEAT) {
+      msgCnt += CLASS_REPEAT_SCORE;
+    } else if (msg.labelFirst == CLASS_TECH) {
+      msgCnt += CLASS_TECH_SCORE;
+    } else {
+      msgCnt++;
+    }
+  }
+  let result: QuotaResult = { shouldMute: false, msgCnt: Math.floor(msgCnt), msgQuota };
 
   if (result.msgCnt >= result.msgQuota) {
     let now = new Date();

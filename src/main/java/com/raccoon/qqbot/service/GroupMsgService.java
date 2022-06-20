@@ -33,6 +33,7 @@ import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Service
@@ -57,20 +58,21 @@ public class GroupMsgService extends BaseService {
         final String cHeart = "\u2764";
         final String cBomb = "\uD83D\uDCA3";
         final String cLife = "\uD83D\uDC53";
-        String quotaSumStr = cHeart + "x" + stat.getHeartCnt() + " " + cBomb + "x" + stat.getBombCnt() + " " + cLife + stat.getLifeCnt() + "\n";
+        String quotaSumStr = cHeart + " x " + stat.getHeartCnt() + " " + cBomb + " x " + stat.getBombCnt() + " " + cLife +" x "+ stat.getLifeCnt() + "\n";
 
+        SimpleDateFormat format = new SimpleDateFormat("YYYY-MM-dd HH:mm");
         String quotaDetailStr = "详情：";
         for (BotAdminActionEntity action : actionEntityList) {
 
             if (action.getType() == BotAdminActionConsts.TYPE_QUOTA) {
                 if (action.getQuotaCnt() > 0) {
-                    quotaDetailStr += "\n" + cHeart + "x" + action.getQuotaCnt();
+                    quotaDetailStr += "\n" + cHeart + " x " + action.getQuotaCnt() + " : " + format.format(new Date(action.getExpireTime().getTime()));
                 } else if (action.getQuotaCnt() < 0) {
-                    quotaDetailStr += "\n" + cBomb + "x" + (-action.getQuotaCnt());
+                    quotaDetailStr += "\n" + cBomb + " x " + (-action.getQuotaCnt()) + " : " + format.format(new Date(action.getExpireTime().getTime()));
                 }
             } else if (action.getType() == BotAdminActionConsts.TYPE_QUOTA_EXTRA) {
                 if (action.getQuotaCnt() > 0) {
-                    quotaDetailStr += "\n" + cLife + "x" + action.getQuotaCnt();
+                    quotaDetailStr += "\n" + cLife + " x " + action.getQuotaCnt() + " : " + format.format(new Date(action.getExpireTime().getTime()));
                 }
             }
         }

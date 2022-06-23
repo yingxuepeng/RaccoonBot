@@ -31,6 +31,7 @@ public class BotController {
     @Autowired
     private TopicService topicService;
 
+
     @PostConstruct
     public void init() {
         // 上线
@@ -56,16 +57,14 @@ public class BotController {
             }
             groupJoinService.sendWelcomeMessage(event);
         });
-
         // 收到群聊消息
         miraiBot.getEventChannel().subscribeAlways(GroupMessageEvent.class, event -> {
-            // 非管理组
+            // 非管理群组
             if (event.getGroup().getId() != miraiInfo.getGroupId()) {
                 return;
             }
             // 获取action
-            UserAction userAction = UserAction.From(event, miraiInfo);
-
+            UserAction userAction = UserAction.from(event, miraiInfo);
 
             if (userAction == null) {
                 groupMsgService.saveMsg(event);
@@ -101,6 +100,15 @@ public class BotController {
                     break;
                 case TOPIC_LIST:
                     topicService.sendTopicList(event, userAction);
+                    break;
+                case VOTE:
+                    groupMsgService.vote(event, userAction);
+                    break;
+                case EXECUTION:
+                    groupMsgService.execute(event, userAction);
+                    break;
+                case VOTE_COUNT:
+                    groupMsgService.showVotes(event, userAction);
                     break;
                 case CONFIG_HOLIDAY:
                 case CONFIG_WORK:

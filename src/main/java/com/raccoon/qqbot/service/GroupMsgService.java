@@ -107,18 +107,18 @@ public class GroupMsgService extends BaseService {
         if (botAdminActionEntity == null) {
             isUpdate = false;
             botAdminActionEntity = botAdminActionDao.createEntity(userAction.getSenderId(), userAction.getTargetId(), BotAdminActionConsts.TYPE_QUOTA);
+
+            // expire time，延长2个月
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(System.currentTimeMillis());
+            calendar.add(Calendar.MONTH, 2);
+            botAdminActionEntity.setExpireTime(new Timestamp(calendar.getTime().getTime()));
         } else {
             curQuotaCnt += botAdminActionEntity.getQuotaCnt();
         }
         // step
         int quotaStep = userAction.getStep();
         botAdminActionEntity.setQuotaStep(quotaStep);
-
-        // expire time，延长2个月
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(System.currentTimeMillis());
-        calendar.add(Calendar.MONTH, 2);
-        botAdminActionEntity.setExpireTime(new Timestamp(calendar.getTime().getTime()));
 
         // quota cnt
         QuotaChangeAction.Range range = userAction.getRange();

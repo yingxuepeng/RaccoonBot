@@ -2,15 +2,19 @@ package com.raccoon.qqbot.bot;
 
 import com.raccoon.qqbot.config.MiraiConfig;
 import com.raccoon.qqbot.data.action.*;
+import com.raccoon.qqbot.service.FunctionControlService;
 import com.raccoon.qqbot.service.GroupJoinService;
 import com.raccoon.qqbot.service.GroupMsgService;
 import com.raccoon.qqbot.service.TopicService;
 import net.mamoe.mirai.Bot;
+import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.event.events.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+
+import static com.raccoon.qqbot.data.action.UserAction.*;
 
 @Service
 public class BotController {
@@ -18,7 +22,6 @@ public class BotController {
     // mirai data
     @Autowired
     private Bot miraiBot;
-
 
     @Autowired
     private MiraiConfig.MiraiInfo miraiInfo;
@@ -30,6 +33,10 @@ public class BotController {
     private GroupJoinService groupJoinService;
     @Autowired
     private TopicService topicService;
+
+    @Autowired
+    private FunctionControlService functionControlService;
+
 
 
     @PostConstruct
@@ -59,26 +66,36 @@ public class BotController {
         });
         // 收到群聊消息
         miraiBot.getEventChannel().subscribeAlways(GroupMessageEvent.class, event -> {
+            Group group = event.getGroup();
+            long groupId = group.getId();
             // 非管理群组
-            if (event.getGroup().getId() != miraiInfo.getGroupId()) {
+            if (groupId != miraiInfo.getGroupId()) {
                 return;
             }
             // 获取action
-            UserAction userAction = UserAction.from(event, miraiInfo);
+            UserAction userAction = from(event, miraiInfo);
 
             if (userAction == null) {
                 groupMsgService.saveMsg(event);
                 groupMsgService.checkQuota(event);
                 return;
             }
+
+            Type type = userAction.getType();
+
             // 权限判断
-            if (!userAction.getType().hasPermission(event.getSender())) {
+            if (!type.hasPermission(event.getSender())) {
                 groupMsgService.sendNoPermissionMessage(event.getGroup());
                 return;
             }
 
+            // 校验是否支持该功能
+            if(!functionControlService.checkGroupSupportThisFunction(groupId, type)){
+                return;
+            }
+
             // 根据type调用不同service func
-            switch (userAction.getType()) {
+            switch (type) {
                 case QUOTA_SHOW:
                     groupMsgService.showQuota(event, (QuotaShowAction) userAction);
                     break;

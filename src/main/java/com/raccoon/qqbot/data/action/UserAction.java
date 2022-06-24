@@ -1,5 +1,6 @@
 package com.raccoon.qqbot.data.action;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.raccoon.qqbot.config.MiraiConfig;
 import net.mamoe.mirai.contact.Member;
 import net.mamoe.mirai.contact.MemberPermission;
@@ -8,7 +9,11 @@ import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.PlainText;
 import net.mamoe.mirai.message.data.QuoteReply;
 
-import static com.raccoon.qqbot.data.action.UserAction.Permission.allWelcome;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.raccoon.qqbot.data.action.UserAction.Permission.ALL_WELCOME;
 
 public class UserAction {
     private Type type;
@@ -95,8 +100,8 @@ public class UserAction {
             userAction.type = type;
             userAction.senderId = event.getSender().getId();
             userAction.targetId = targetId;
-            userAction.senderPermission = GetPermission(event.getSender());
-            userAction.targetPermission = GetPermission(event.getGroup().get(targetId));
+            userAction.senderPermission = getPermission(event.getSender());
+            userAction.targetPermission = getPermission(event.getGroup().get(targetId));
             userAction.actionStr = actionStr;
         }
 
@@ -144,7 +149,7 @@ public class UserAction {
             quoteAction.setSenderId(event.getSender().getId());
             quoteAction.setQuoteReply(quoteReply);
             quoteAction.setActionStr(actionStr);
-            quoteAction.setSenderPermission(GetPermission(event.getSender()));
+            quoteAction.setSenderPermission(getPermission(event.getSender()));
         }
 
         return quoteAction;
@@ -184,7 +189,7 @@ public class UserAction {
         return type;
     }
 
-    public static Permission GetPermission(Member member) {
+    public static Permission getPermission(Member member) {
         Permission memberPermission = Permission.MEMBER;
         if (member.getPermission() == MemberPermission.ADMINISTRATOR) {
             memberPermission = Permission.ADMINISTRATOR;
@@ -253,7 +258,7 @@ public class UserAction {
         ADMINISTRATOR(3),
         OWNER(4);
 
-        final static Permission[] allWelcome = new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR,
+        final static Permission[] ALL_WELCOME = new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR,
                 Permission.CODING_TIGER, Permission.MEMBER};
 
         private int privilege;
@@ -302,17 +307,17 @@ public class UserAction {
         CONFIG_HOLIDAY(10, "过节", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR}),
         CONFIG_WORK(11, "上班", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR}),
         // 上票
-        VOTE(12, "投", KeywordMatchType.START_WITH, allWelcome),
+        VOTE(12, "投", KeywordMatchType.START_WITH, ALL_WELCOME),
         // 处刑
         EXECUTION(13, "执行", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
         // 计算票数
-        VOTE_COUNT(14, "计票", KeywordMatchType.START_WITH, allWelcome),
+        VOTE_COUNT(14, "计票", KeywordMatchType.START_WITH, ALL_WELCOME),
         ;
 
-        private int type;
-        private KeywordMatchType keywordMatchType;
-        private Permission[] permissionArray;
-        private String keyword;
+        private final int type;
+        private final KeywordMatchType keywordMatchType;
+        private final Permission[] permissionArray;
+        private final String keyword;
 
         Type(int type, String keyword, KeywordMatchType keywordMatchType, Permission[] permissionArray) {
             this.type = type;
@@ -321,38 +326,36 @@ public class UserAction {
             this.permissionArray = permissionArray;
         }
 
+        @JsonValue
         public int getType() {
             return type;
-        }
-
-        public void setType(int type) {
-            this.type = type;
         }
 
         public Permission[] getPermissionArray() {
             return permissionArray;
         }
 
-        public void setPermissionArray(Permission[] permissionArray) {
-            this.permissionArray = permissionArray;
-        }
-
         public String getKeyword() {
             return keyword;
         }
 
-        public void setKeyword(String keyword) {
-            this.keyword = keyword;
-        }
-
         public boolean hasPermission(Member member) {
-            Permission memberPermission = GetPermission(member);
+            Permission memberPermission = getPermission(member);
             for (Permission permission : permissionArray) {
                 if (permission == memberPermission) {
                     return true;
                 }
             }
             return false;
+        }
+
+        final private static Map<Integer, Type> map = new HashMap<>();
+        static {
+            Arrays.stream(Type.values()).forEach(o -> map.put(o.type, o));
+        }
+
+        public static Type valueOf(int type){
+            return Type.map.get(type);
         }
     }
 

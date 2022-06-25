@@ -52,7 +52,7 @@ public class GroupJoinService extends BaseService {
         MessageChainBuilder builder = new MessageChainBuilder();
         builder.append(new PlainText("欢迎新" + title + "! "));
         builder.append(new At(event.getMember().getId()));
-        builder.append(new PlainText("\n请熟读群公告规定，并修改群名片为：'{昵称}_{最好的语言}'!"));
+        builder.append(new PlainText("\n请熟读群公告规定，并修改群名片为：'{昵称}_{最好的语言}'!然后回答入群五大问题：请回答：地点 学校 工作 语言 特殊xp（必须！）"));
         miraiBot.getGroup(miraiInfo.getGroupId()).sendMessage(builder.build());
 
 
@@ -60,7 +60,7 @@ public class GroupJoinService extends BaseService {
             return;
         }
         // url
-        String url = "新群友代码地址：\n" + "http://www.primeoj.com/uuid.php?uuid=" + solutionEntity.getSolutionUuid();
+        String url = "视奸新群友代码地址：\n" + "http://www.primeoj.com/uuid.php?uuid=" + solutionEntity.getSolutionUuid();
         miraiBot.getGroup(miraiInfo.getGroupId()).sendMessage(new PlainText(url));
     }
 

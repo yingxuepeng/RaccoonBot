@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { TopicInfoResponse } from "../../network/model/topicInfoResponse";
 
+import './TopicInfo.css';
 interface TopicInfoState {
   topicKey: string;
   topicInfoResp?: TopicInfoResponse;
@@ -42,19 +43,22 @@ export default function TopicInfoPage() {
   const renderMsg = () => {
     if (state.topicInfoResp) {
       return (
-        <div>
-          {state.topicInfoResp.msgList.map((msg) => {
-            return <div>{msg.senderNick + "：" + msg.content}</div>;
-          })}
-        </div>
+        <>
+          {state.topicInfoResp.msgList.map((msg) => 
+            <div style={{ marginTop: 10 }}>
+              <div className="sender">{msg.senderNick + "："}</div>
+              <div className="message">{msg.content}</div>
+            </div>
+          )}
+        </>
       );
     }
     return null;
   };
 
   return (
-    <main style={{ padding: "1rem 0" }}>
-      <div>{renderTitle()}</div>
+    <main style={{ padding: "1rem 0", width: '900px' }}>
+      <div className="topic">{renderTitle()}</div>
       <div>{renderMsg()}</div>
     </main>
   );

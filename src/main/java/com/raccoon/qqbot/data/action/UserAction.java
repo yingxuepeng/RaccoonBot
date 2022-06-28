@@ -8,6 +8,8 @@ import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.PlainText;
 import net.mamoe.mirai.message.data.QuoteReply;
 
+import static com.raccoon.qqbot.data.action.UserAction.Permission.allWelcome;
+
 public class UserAction {
     private Type type;
     private long senderId;
@@ -18,7 +20,7 @@ public class UserAction {
     private String actionStr;
 
 
-    public static UserAction From(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
+    public static UserAction from(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
         if (event.getMessage().size() < 2) {
             return null;
         }
@@ -78,6 +80,9 @@ public class UserAction {
             case TOPIC_LIST:
             case CONFIG_HOLIDAY:
             case CONFIG_WORK:
+            case VOTE:
+            case VOTE_COUNT:
+            case EXECUTION:
                 userAction = new UserAction();
                 break;
             // 禁言自己
@@ -145,6 +150,12 @@ public class UserAction {
         return quoteAction;
     }
 
+    /**
+     *
+     * 在这里判断该Str的具体类型
+     * @param actionStr
+     * @return
+     */
     public static Type getType(String actionStr) {
         // get action type
         Type type = Type.NONE;
@@ -242,6 +253,9 @@ public class UserAction {
         ADMINISTRATOR(3),
         OWNER(4);
 
+        final static Permission[] allWelcome = new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR,
+                Permission.CODING_TIGER, Permission.MEMBER};
+
         private int privilege;
 
         Permission(int privilege) {
@@ -286,7 +300,14 @@ public class UserAction {
 
         // holiday
         CONFIG_HOLIDAY(10, "过节", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR}),
-        CONFIG_WORK(11, "上班", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR});
+        CONFIG_WORK(11, "上班", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR}),
+        // 上票
+        VOTE(12, "投", KeywordMatchType.START_WITH, allWelcome),
+        // 处刑
+        EXECUTION(13, "执行", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
+        // 计算票数
+        VOTE_COUNT(14, "计票", KeywordMatchType.START_WITH, allWelcome),
+        ;
 
         private int type;
         private KeywordMatchType keywordMatchType;
@@ -298,7 +319,6 @@ public class UserAction {
             this.keyword = keyword;
             this.keywordMatchType = keywordMatchType;
             this.permissionArray = permissionArray;
-
         }
 
         public int getType() {

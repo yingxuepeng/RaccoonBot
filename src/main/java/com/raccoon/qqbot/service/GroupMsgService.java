@@ -13,15 +13,18 @@ import com.raccoon.qqbot.db.entity.BotMessageEntity;
 import com.raccoon.qqbot.db.entity.BotScriptEntity;
 import com.raccoon.qqbot.exception.ReturnedException;
 import com.raccoon.qqbot.exception.ServiceError;
+import com.raccoon.qqbot.service.schedule.ScheduleService;
 import com.tencentcloudapi.common.exception.TencentCloudSDKException;
 import com.tencentcloudapi.nlp.v20190408.models.ClassificationResult;
 import com.tencentcloudapi.nlp.v20190408.models.TextClassificationResponse;
 import net.mamoe.mirai.contact.Group;
+import net.mamoe.mirai.contact.Member;
 import net.mamoe.mirai.contact.MemberPermission;
 import net.mamoe.mirai.contact.NormalMember;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -35,9 +38,16 @@ import java.io.InputStreamReader;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class GroupMsgService extends BaseService {
+    @Autowired
+    private ScheduleService scheduleService;
 
     public void showMemberQuota(MessageEvent event) {
         long memberId = Long.parseLong(event.getMessage().contentToString());
@@ -99,6 +109,13 @@ public class GroupMsgService extends BaseService {
 
         //  quota change
         int deltaQuotaCnt = StringUtils.countOccurrencesOf(userAction.getActionStr(), userAction.getType().getKeyword());
+
+        UserAction.Permission permission = userAction.getSenderPermission();
+        if(permission.lessThan(UserAction.Permission.OWNER)){
+            // 限制码皇和管理员的单次扣除或者增加量
+            deltaQuotaCnt = Math.min(3, deltaQuotaCnt);
+        }
+
         if (userAction.getType() == UserAction.Type.QUOTA_DECREASE) {
             deltaQuotaCnt = -deltaQuotaCnt;
         }
@@ -268,16 +285,7 @@ public class GroupMsgService extends BaseService {
             System.out.println(dataStr);
             result = (String) invocable.invokeFunction(scriptEntity.getScriptEntrance(), dataStr);
             return result;
-        } catch (ScriptException e) {
-            e.printStackTrace();
-            throw new ReturnedException(ServiceError.JSEXEC_ERROR);
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-            throw new ReturnedException(ServiceError.JSEXEC_ERROR);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            throw new ReturnedException(ServiceError.JSEXEC_ERROR);
-        } catch (IOException e) {
+        } catch (ScriptException | NoSuchMethodException | JsonProcessingException e) {
             e.printStackTrace();
             throw new ReturnedException(ServiceError.JSEXEC_ERROR);
         }
@@ -300,7 +308,7 @@ public class GroupMsgService extends BaseService {
         String msg = msgStr.toString();
         final int MAX_LENGTH = 10000;
         if (msg.length() > MAX_LENGTH) {
-            msg.substring(0, MAX_LENGTH);
+            msg = msg.substring(0, MAX_LENGTH);
         }
 
         if (isTrainableMsg) {
@@ -451,5 +459,158 @@ public class GroupMsgService extends BaseService {
             redisService.setIsHoliday(false);
             event.getGroup().sendMessage("上班嘞...");
         }
+    }
+
+    // vote不锁，可能会有非原子性操作导致的问题？
+    final static Map<NormalMember, Integer> VOTE_MAP = new ConcurrentHashMap<>();
+    final static Map<Member, Set<Member>> ALREADY_VOTE_MAP = new ConcurrentHashMap<>();
+    final private static Pattern VOTE_PATTERN = Pattern.compile("(\\d+)");
+
+    public void vote(GroupMessageEvent event, UserAction userAction) {
+        Group group = event.getGroup();
+        NormalMember target = group.get(userAction.getTargetId());
+        if(target.getPermission().equals(MemberPermission.ADMINISTRATOR)||target.getPermission().equals(MemberPermission.OWNER)){
+            // 做不到哇。
+            return;
+        }
+        // 已经禁言了，不能接着伤害它。
+        if (target.isMuted()){
+            group.sendMessage("已经禁言啦，行行好");
+            return;
+        }
+        String s = userAction.getActionStr();
+        Matcher matcher = VOTE_PATTERN.matcher(s);
+        if (matcher.find()) {
+            String numberStr = matcher.group(1);
+            int count = Integer.parseInt(numberStr);
+            Member member = event.getSender();
+            if (member.equals(target)) {
+                // 目前各个群没有隔离，这样可能导致跨群投票。
+                if (VOTE_MAP.size() == 1) {
+                    for (NormalMember value : VOTE_MAP.keySet()) {
+                        target = value;
+                        break;
+                    }
+                } else {
+                    // 判断为投自己
+                }
+            }
+            boolean privilege = !userAction.getSenderPermission().lessThan(UserAction.Permission.CODING_EMPEROR);
+            vote0(member, target, count, privilege, group);
+        } else {
+            group.sendMessage("请指定投票票数.");
+        }
+    }
+
+    /**
+     * 显示已有投票
+     * @param event
+     * @param userAction
+     */
+    public void showVotes(GroupMessageEvent event, UserAction userAction) {
+        long targetId = userAction.getTargetId();
+        Member target = event.getGroup().get(targetId);
+        int votes = VOTE_MAP.getOrDefault(target, 0);
+        event.getGroup().sendMessage("该用户被投了" + votes + "票.");
+    }
+
+    private final Map<Member, Future<?>> futureMap = new ConcurrentHashMap<>();
+
+    private void vote0(Member fromMember, NormalMember toMember, int count, boolean privilege, Group group) {
+        if (count == 0) {
+            return;
+        }
+        // 权限校验
+        int c = Math.abs(count);
+        // 管理员有两票
+        if (privilege) {
+            if (c > 2) {
+                int vote = VOTE_MAP.getOrDefault(toMember, 0);
+                // 使用了累加计票的表示形式，例如当前总票数为 8/5, 投10/5
+                if (count - vote != 2) {
+                    group.sendMessage("票数和权限不符。");
+                    return;
+                } else {
+                    count = 2;
+                }
+            }
+        } else {
+            if (c > 1) {
+                int vote = VOTE_MAP.getOrDefault(toMember, 0);
+                if (count - vote != 1) {
+                    group.sendMessage("票数和权限不符。");
+                    return;
+                } else {
+                    count = 1;
+                }
+            }
+        }
+        Set<Member> votedSet = ALREADY_VOTE_MAP.get(toMember);
+        if (votedSet == null) {
+            // 这里预示是第一次发生投票，因此需要保存future, 新的投票不延后这个执行时间
+            votedSet = new HashSet<>();
+            ALREADY_VOTE_MAP.put(toMember, votedSet);
+            // 这里添加一个定时任务，然后在execute0时一并cancel掉;
+            Future<?> future = scheduleService.schedule(() -> {
+                        boolean success = execute0(group, toMember);
+                        // 若结算不成功，则手动移除掉关联的所有记录
+                        if (!success) {
+                            VOTE_MAP.remove(toMember);
+                            ALREADY_VOTE_MAP.remove(toMember);
+                            futureMap.remove(toMember);
+                        }
+                    },
+                    1, TimeUnit.HOURS);
+            futureMap.put(toMember, future);
+        } else {
+            boolean absent = votedSet.add(fromMember);
+            if (absent) {
+                VOTE_MAP.merge(toMember, count, Integer::sum);
+            }
+        }
+    }
+
+    private final static int MUTE_LIMIT = 5;
+    private final static int COUNT_INTERVAL = 5;
+
+    /**
+     * 执行票数结算
+     * @param group
+     * @param member
+     * @return 是否成功
+     */
+    private boolean execute0(Group group, Member member) {
+        Integer votes = VOTE_MAP.getOrDefault(member, 0);
+        // 票数阶梯性生效，每隔5票效果翻倍。
+        if (votes >= MUTE_LIMIT) {
+            int time = 0;
+            int base = 1;
+            while (votes > COUNT_INTERVAL) {
+                time += base * COUNT_INTERVAL;
+                votes -= COUNT_INTERVAL;
+                base <<= 1;
+            }
+            time += votes * base;
+            member.mute(time * 60);
+            VOTE_MAP.remove(member);
+            ALREADY_VOTE_MAP.remove(member);
+            Future<?> future = futureMap.remove(member);
+            future.cancel(false);
+            return true;
+        } else {
+            group.sendMessage("未满足禁言条件，当前对象的投票数量为:" + votes);
+            return false;
+        }
+    }
+
+    /**
+     * 计票执行
+     * @param event
+     * @param userAction
+     */
+    public void execute(GroupMessageEvent event, UserAction userAction) {
+        Group group = event.getGroup();
+        Member target = group.get(userAction.getTargetId());
+        execute0(group, target);
     }
 }

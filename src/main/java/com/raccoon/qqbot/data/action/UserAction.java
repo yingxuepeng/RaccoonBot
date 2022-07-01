@@ -8,7 +8,7 @@ import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.PlainText;
 import net.mamoe.mirai.message.data.QuoteReply;
 
-import static com.raccoon.qqbot.data.action.UserAction.Permission.allWelcome;
+import static com.raccoon.qqbot.data.action.UserAction.Permission.ALL_WELCOME;
 
 public class UserAction {
     private Type type;
@@ -20,19 +20,19 @@ public class UserAction {
     private String actionStr;
 
 
-    public static UserAction from(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
+    public static UserAction From(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
         if (event.getMessage().size() < 2) {
             return null;
         }
         if ((event.getMessage().get(1) instanceof At)) {
-            return getAtAction(event, miraiInfo);
+            return GetAtAction(event, miraiInfo);
         } else if ((event.getMessage().get(1) instanceof QuoteReply)) {
-            return getQuoteAction(event, miraiInfo);
+            return GetQuoteAction(event, miraiInfo);
         }
         return null;
     }
 
-    public static UserAction getAtAction(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
+    public static UserAction GetAtAction(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
         if (event.getMessage().size() < 3) {
             return null;
         }
@@ -59,7 +59,7 @@ public class UserAction {
         PlainText action = (PlainText) event.getMessage().get(2);
         String actionStr = action.getContent().trim().toLowerCase();
 
-        Type type = getType(actionStr);
+        Type type = GetType(actionStr);
         // user action
         UserAction userAction = null;
         switch (type) {
@@ -104,7 +104,7 @@ public class UserAction {
         return userAction;
     }
 
-    public static UserAction getQuoteAction(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
+    public static UserAction GetQuoteAction(GroupMessageEvent event, MiraiConfig.MiraiInfo miraiInfo) {
         if (event.getMessage().size() < 4) {
             return null;
         }
@@ -126,7 +126,7 @@ public class UserAction {
         }
         PlainText action = (PlainText) event.getMessage().get(3);
         String actionStr = action.getContent().trim().toLowerCase();
-        Type type = getType(actionStr);
+        Type type = GetType(actionStr);
 
         long targetId = quoteReply.getSource().getIds()[0];
         // user action
@@ -156,7 +156,7 @@ public class UserAction {
      * @param actionStr
      * @return
      */
-    public static Type getType(String actionStr) {
+    public static Type GetType(String actionStr) {
         // get action type
         Type type = Type.NONE;
         //  equal first
@@ -253,7 +253,7 @@ public class UserAction {
         ADMINISTRATOR(3),
         OWNER(4);
 
-        final static Permission[] allWelcome = new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR,
+        final static Permission[] ALL_WELCOME = new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR,
                 Permission.CODING_TIGER, Permission.MEMBER};
 
         private int privilege;
@@ -302,11 +302,11 @@ public class UserAction {
         CONFIG_HOLIDAY(10, "过节", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR}),
         CONFIG_WORK(11, "上班", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR}),
         // 上票
-        VOTE(12, "投", KeywordMatchType.START_WITH, allWelcome),
+        VOTE(12, "投", KeywordMatchType.START_WITH, ALL_WELCOME),
         // 处刑
         EXECUTION(13, "执行", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
         // 计算票数
-        VOTE_COUNT(14, "计票", KeywordMatchType.START_WITH, allWelcome),
+        VOTE_COUNT(14, "计票", KeywordMatchType.START_WITH, ALL_WELCOME),
         ;
 
         private int type;

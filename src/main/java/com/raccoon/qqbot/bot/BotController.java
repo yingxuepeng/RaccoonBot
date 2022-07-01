@@ -64,7 +64,7 @@ public class BotController {
                 return;
             }
             // 获取action
-            UserAction userAction = UserAction.from(event, miraiInfo);
+            UserAction userAction = UserAction.From(event, miraiInfo);
 
             if (userAction == null) {
                 groupMsgService.saveMsg(event);

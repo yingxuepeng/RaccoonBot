@@ -71,12 +71,20 @@ public class BotController {
                 groupMsgService.checkQuota(event);
                 return;
             }
+
+            // 系统配置
+            if (!miraiInfo.getValideActionTypeList().contains(userAction.getType())) {
+                groupMsgService.saveMsg(event);
+                groupMsgService.checkQuota(event);
+                return;
+            }
             // 权限判断
             if (!userAction.getType().hasPermission(event.getSender())) {
+                groupMsgService.saveMsg(event);
+                groupMsgService.checkQuota(event);
                 groupMsgService.sendNoPermissionMessage(event.getGroup());
                 return;
             }
-
             // 根据type调用不同service func
             switch (userAction.getType()) {
                 case QUOTA_SHOW:
@@ -101,6 +109,10 @@ public class BotController {
                 case TOPIC_LIST:
                     topicService.sendTopicList(event, userAction);
                     break;
+                case CONFIG_HOLIDAY:
+                case CONFIG_WORK:
+                    groupMsgService.setIsHoliday(event, userAction);
+                    break;
                 case VOTE:
                     groupMsgService.vote(event, userAction);
                     break;
@@ -110,10 +122,9 @@ public class BotController {
                 case VOTE_COUNT:
                     groupMsgService.showVotes(event, userAction);
                     break;
-                case CONFIG_HOLIDAY:
-                case CONFIG_WORK:
-                    groupMsgService.setIsHoliday(event, userAction);
                 default:
+                    groupMsgService.saveMsg(event);
+                    groupMsgService.checkQuota(event);
                     break;
             }
         });

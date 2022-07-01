@@ -1,11 +1,15 @@
 package com.raccoon.qqbot.config;
 
+import com.raccoon.qqbot.data.action.UserAction;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.BotFactory;
 import net.mamoe.mirai.utils.BotConfiguration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Configuration
 public class MiraiConfig {
@@ -15,6 +19,9 @@ public class MiraiConfig {
     private String loginPwdMd5;
     @Value("${com.raccoon.qqbot.mirai.groupid}")
     private String groupId;
+
+    @Value("${com.raccoon.qqbot.valid-action-type-list}")
+    private String validActionTypeList;
 
     @Bean("miraiBot")
     public Bot getMiraiBot() {
@@ -33,6 +40,29 @@ public class MiraiConfig {
         MiraiInfo miraiInfo = new MiraiInfo();
         miraiInfo.setBotId(Long.parseLong(loginQid));
         miraiInfo.setGroupId(Long.parseLong(groupId));
+        // set valid action type list
+        List<UserAction.Type> typeList = new ArrayList<>();
+        String[] typePeroidStr = validActionTypeList.split(",");
+        for (String peroidStr : typePeroidStr) {
+            String[] rangeStr = peroidStr.trim().split("-");
+            try {
+                if (rangeStr.length == 1) {
+                    // ...,5,...
+                    int type = Integer.parseInt(rangeStr[0].trim());
+                    typeList.add(UserAction.Type.GetType(type));
+                } else if (rangeStr.length == 2) {
+                    // ...,1-10,...
+                    int beginType = Integer.parseInt(rangeStr[0].trim());
+                    int endType = Integer.parseInt(rangeStr[1].trim());
+                    for (int type = beginType; type <= endType; type++) {
+                        typeList.add(UserAction.Type.GetType(type));
+                    }
+                }
+            } catch (NumberFormatException e) {
+
+            }
+        }
+        miraiInfo.setValideActionTypeList(typeList);
         return miraiInfo;
     }
 
@@ -50,6 +80,8 @@ public class MiraiConfig {
         private Long botId;
         private Long groupId;
 
+        private List<UserAction.Type> valideActionTypeList;
+
         public Long getBotId() {
             return botId;
         }
@@ -66,5 +98,12 @@ public class MiraiConfig {
             this.groupId = groupId;
         }
 
+        public List<UserAction.Type> getValideActionTypeList() {
+            return valideActionTypeList;
+        }
+
+        public void setValideActionTypeList(List<UserAction.Type> valideActionTypeList) {
+            this.valideActionTypeList = valideActionTypeList;
+        }
     }
 }

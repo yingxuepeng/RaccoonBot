@@ -151,8 +151,8 @@ public class UserAction {
     }
 
     /**
-     *
      * 在这里判断该Str的具体类型
+     *
      * @param actionStr
      * @return
      */
@@ -353,6 +353,15 @@ public class UserAction {
                 }
             }
             return false;
+        }
+
+        public static Type GetType(int type) {
+            for (Type t : Type.values()) {
+                if (t.getType() == type) {
+                    return t;
+                }
+            }
+            return Type.NONE;
         }
     }
 

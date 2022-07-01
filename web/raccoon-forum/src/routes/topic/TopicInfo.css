@@ -1,0 +1,15 @@
+
+.topic {
+  font-size: 14px;
+}
+
+.sender {
+	color: rgb(159, 167, 196);
+  font-size: 13px;
+}
+
+.message {
+	/* color: rgb(159, 167, 196); */
+  font-size: 14px;
+  margin-top: 5px;
+}

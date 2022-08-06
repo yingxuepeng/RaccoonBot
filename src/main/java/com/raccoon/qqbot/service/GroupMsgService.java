@@ -5,6 +5,7 @@ import com.raccoon.qqbot.data.BotUserQuotaVo;
 import com.raccoon.qqbot.data.MsgConfig;
 import com.raccoon.qqbot.data.ScriptResultVo;
 import com.raccoon.qqbot.data.action.*;
+import com.raccoon.qqbot.data.msg.MsgChainVo;
 import com.raccoon.qqbot.db.consts.BotAdminActionConsts;
 import com.raccoon.qqbot.db.consts.BotMessageConsts;
 import com.raccoon.qqbot.db.entity.BotAdminActionEntity;
@@ -62,13 +63,14 @@ public class GroupMsgService extends BaseService {
     }
 
     public void showQuota(GroupMessageEvent event, QuotaShowAction userAction) {
-        ScriptResultVo info = getMemberMuteInfo(userAction.getTargetId());
-        List<BotAdminActionEntity> actionEntityList = botAdminActionDao.selectByMemberScriptStatus(userAction.getTargetId(), 1L, BotAdminActionConsts.STATUS_NORMAL);
+        Long targetId = userAction.getTargetIdList().get(0);
+        ScriptResultVo info = getMemberMuteInfo(targetId);
+        List<BotAdminActionEntity> actionEntityList = botAdminActionDao.selectByMemberScriptStatus(targetId, 1L, BotAdminActionConsts.STATUS_NORMAL);
         QuotaShowAction.Stat stat = userAction.getStat(actionEntityList);
         final String cHeart = "\u2764";
         final String cBomb = "\uD83D\uDCA3";
         final String cLife = "\uD83D\uDC53";
-        String quotaSumStr = cHeart + " x " + stat.getHeartCnt() + " " + cBomb + " x " + stat.getBombCnt() + " " + cLife +" x "+ stat.getLifeCnt() + "\n";
+        String quotaSumStr = cHeart + " x " + stat.getHeartCnt() + " " + cBomb + " x " + stat.getBombCnt() + " " + cLife + " x " + stat.getLifeCnt() + "\n";
 
         SimpleDateFormat format = new SimpleDateFormat("YYYY-MM-dd HH:mm");
         String quotaDetailStr = "详情：";
@@ -88,30 +90,27 @@ public class GroupMsgService extends BaseService {
         }
 
         MessageChainBuilder builder = new MessageChainBuilder();
-        builder.append(new At(userAction.getTargetId()));
+        builder.append(new At(targetId));
         builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgQuota() + "\n"));
         builder.append(new PlainText(quotaSumStr));
         builder.append(new PlainText(quotaDetailStr));
         event.getGroup().sendMessage(builder.build());
     }
 
-    public void changeQuota(GroupMessageEvent event, QuotaChangeAction userAction) {
-        // 无法禁言管理员，所以不用操作quota
-        // 但是操作了也无所谓
-//        if (!userAction.getTargetPermission().lessThan(UserAction.Permission.ADMINISTRATOR)) {
-//            sendNoPermissionMessage(event.getGroup());
-//            return;
-//        }
-        BotAdminActionEntity botAdminActionEntity = botAdminActionDao.selectByAdminMemberStatus(userAction.getSenderId(), userAction.getTargetId(),
+    public void changeQuotaBatch(GroupMessageEvent event, QuotaChangeAction userAction) {
+        userAction.getTargetIdList().forEach(targetId -> changeQuotaSingle(event, userAction, targetId));
+    }
+
+    private void changeQuotaSingle(GroupMessageEvent event, QuotaChangeAction userAction, long targetId) {
+        BotAdminActionEntity botAdminActionEntity = botAdminActionDao.selectByAdminMemberStatus(userAction.getSenderId(), targetId,
                 BotAdminActionConsts.STATUS_NORMAL, BotAdminActionConsts.TYPE_QUOTA);
         // quota step
-
 
         //  quota change
         int deltaQuotaCnt = StringUtils.countOccurrencesOf(userAction.getActionStr(), userAction.getType().getKeyword());
 
         UserAction.Permission permission = userAction.getSenderPermission();
-        if(permission.lessThan(UserAction.Permission.OWNER)){
+        if (permission.lessThan(UserAction.Permission.OWNER)) {
             // 限制码皇和管理员的单次扣除或者增加量
             deltaQuotaCnt = Math.min(3, deltaQuotaCnt);
         }
@@ -123,12 +122,12 @@ public class GroupMsgService extends BaseService {
         boolean isUpdate = true;
         if (botAdminActionEntity == null) {
             isUpdate = false;
-            botAdminActionEntity = botAdminActionDao.createEntity(userAction.getSenderId(), userAction.getTargetId(), BotAdminActionConsts.TYPE_QUOTA);
+            botAdminActionEntity = botAdminActionDao.createEntity(userAction.getSenderId(), targetId, BotAdminActionConsts.TYPE_QUOTA);
 
-            // expire time，延长2个月
+            // expire time
             Calendar calendar = Calendar.getInstance();
             calendar.setTimeInMillis(System.currentTimeMillis());
-            calendar.add(Calendar.MONTH, 2);
+            calendar.add(Calendar.DATE, 45);
             botAdminActionEntity.setExpireTime(new Timestamp(calendar.getTime().getTime()));
         } else {
             curQuotaCnt += botAdminActionEntity.getQuotaCnt();
@@ -161,22 +160,19 @@ public class GroupMsgService extends BaseService {
             botAdminActionEntity.setQuotaCnt(curQuotaCnt);
             botAdminActionDao.insert(botAdminActionEntity);
         }
-        sendQuotaInfo(event.getGroup(), hintStr, userAction.getTargetId());
+        sendQuotaInfo(event.getGroup(), hintStr, targetId);
         if (deltaQuotaCnt > 0) {
-            NormalMember normalMember = event.getGroup().getMembers().get(userAction.getTargetId());
+            NormalMember normalMember = event.getGroup().getMembers().get(targetId);
             if (normalMember.isMuted()) {
                 normalMember.unmute();
             }
         }
     }
 
+
     public void addExtraLife(GroupMessageEvent event, QuotaExtraLifeAction userAction) {
-        // 无法禁言管理员，所以不用操作quota
-//        if (!userAction.getTargetPermission().lessThan(UserAction.Permission.ADMINISTRATOR)) {
-//            sendNoPermissionMessage(event.getGroup());
-//            return;
-//        }
-        BotAdminActionEntity botAdminActionEntity = botAdminActionDao.selectByAdminMemberStatus(userAction.getSenderId(), userAction.getTargetId(),
+        Long targetId = userAction.getTargetIdList().get(0);
+        BotAdminActionEntity botAdminActionEntity = botAdminActionDao.selectByAdminMemberStatus(userAction.getSenderId(), targetId,
                 BotAdminActionConsts.STATUS_NORMAL, BotAdminActionConsts.TYPE_QUOTA_EXTRA);
         // quota step
 
@@ -189,7 +185,7 @@ public class GroupMsgService extends BaseService {
         boolean isUpdate = true;
         if (botAdminActionEntity == null) {
             isUpdate = false;
-            botAdminActionEntity = botAdminActionDao.createEntity(userAction.getSenderId(), userAction.getTargetId(), BotAdminActionConsts.TYPE_QUOTA_EXTRA);
+            botAdminActionEntity = botAdminActionDao.createEntity(userAction.getSenderId(), targetId, BotAdminActionConsts.TYPE_QUOTA_EXTRA);
 
             // expire time
             Calendar calendar = Calendar.getInstance();
@@ -218,11 +214,11 @@ public class GroupMsgService extends BaseService {
             botAdminActionEntity.setQuotaCnt(curQuotaCnt);
             botAdminActionDao.insert(botAdminActionEntity);
         }
-        NormalMember normalMember = event.getGroup().getMembers().get(userAction.getTargetId());
+        NormalMember normalMember = event.getGroup().getMembers().get(targetId);
         if (normalMember.isMuted()) {
             normalMember.unmute();
         }
-        sendQuotaInfo(event.getGroup(), hintStr, userAction.getTargetId());
+        sendQuotaInfo(event.getGroup(), hintStr, targetId);
     }
 
     private void sendQuotaInfo(Group group, String prefixStr, long memberId) {
@@ -322,8 +318,15 @@ public class GroupMsgService extends BaseService {
                 entity.setLsPby(1f);
             }
         }
-
         entity.setContent(msg);
+        // save origin msg for frontend
+        MsgChainVo msgChainVo = MsgChainVo.Create(event.getMessage(), event.getGroup());
+        try {
+            entity.setMsgChainJstr(objectMapper.writeValueAsString(msgChainVo));
+        } catch (JsonProcessingException e) {
+            throw new ReturnedException(ServiceError.COMMON_CUSTOM_MESSAGE);
+        }
+
         entity.setIsDel(false);
         entity.setIsTrainable(isTrainableMsg);
         botMessageDao.insert(entity);
@@ -421,7 +424,7 @@ public class GroupMsgService extends BaseService {
     private void startMsgClassificationTask(long msgId, String msg) {
         BotMessageEntity entity = botMessageDao.selectById(msgId);
         try {
-            TextClassificationResponse resp = qCloudService.getMsgLabel(msg);
+            TextClassificationResponse resp = qCloudNlpService.getMsgLabel(msg);
             if (resp.getClasses().length <= 0) {
                 return;
             }
@@ -468,13 +471,15 @@ public class GroupMsgService extends BaseService {
 
     public void vote(GroupMessageEvent event, UserAction userAction) {
         Group group = event.getGroup();
-        NormalMember target = group.get(userAction.getTargetId());
-        if(target.getPermission().equals(MemberPermission.ADMINISTRATOR)||target.getPermission().equals(MemberPermission.OWNER)){
+        Long targetId = userAction.getTargetIdList().get(0);
+
+        NormalMember target = group.get(targetId);
+        if (target.getPermission().equals(MemberPermission.ADMINISTRATOR) || target.getPermission().equals(MemberPermission.OWNER)) {
             // 做不到哇。
             return;
         }
         // 已经禁言了，不能接着伤害它。
-        if (target.isMuted()){
+        if (target.isMuted()) {
             group.sendMessage("已经禁言啦，行行好");
             return;
         }
@@ -504,11 +509,12 @@ public class GroupMsgService extends BaseService {
 
     /**
      * 显示已有投票
+     *
      * @param event
      * @param userAction
      */
     public void showVotes(GroupMessageEvent event, UserAction userAction) {
-        long targetId = userAction.getTargetId();
+        Long targetId = userAction.getTargetIdList().get(0);
         Member target = event.getGroup().get(targetId);
         int votes = VOTE_MAP.getOrDefault(target, 0);
         event.getGroup().sendMessage("该用户被投了" + votes + "票.");
@@ -575,6 +581,7 @@ public class GroupMsgService extends BaseService {
 
     /**
      * 执行票数结算
+     *
      * @param group
      * @param member
      * @return 是否成功
@@ -605,12 +612,14 @@ public class GroupMsgService extends BaseService {
 
     /**
      * 计票执行
+     *
      * @param event
      * @param userAction
      */
     public void execute(GroupMessageEvent event, UserAction userAction) {
         Group group = event.getGroup();
-        Member target = group.get(userAction.getTargetId());
+        Long targetId = userAction.getTargetIdList().get(0);
+        Member target = group.get(targetId);
         execute0(group, target);
     }
 }

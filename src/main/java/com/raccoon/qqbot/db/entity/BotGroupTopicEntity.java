@@ -12,7 +12,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author pyx
- * @since 2022-05-15
+ * @since 2022-08-06
  */
 @TableName("bot_group_topic")
 public class BotGroupTopicEntity implements Serializable {

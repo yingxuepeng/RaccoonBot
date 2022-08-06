@@ -35,3 +35,4 @@ build/
 ### prod config ###
 /cache/
 /src/main/resources/application-*.properties
+/deploy/nginx/ssl/

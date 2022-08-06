@@ -92,7 +92,7 @@ public class BotController {
                     break;
                 case QUOTA_INCREASE:
                 case QUOTA_DECREASE:
-                    groupMsgService.changeQuota(event, (QuotaChangeAction) userAction);
+                    groupMsgService.changeQuotaBatch(event, (QuotaChangeAction) userAction);
                     break;
                 case QUOTA_EXTRALIFE_ADD:
                     groupMsgService.addExtraLife(event, (QuotaExtraLifeAction) userAction);

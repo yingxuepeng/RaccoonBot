@@ -43,7 +43,7 @@ public class TopicService {
         String msg = "最近" + TOPIC_CNT + "条mark消息：\n";
         for (BotGroupTopicEntity topic : topicList) {
             msg += "主题：" + StringUtils.left(topic.getTitle(), 32) + "\n";
-            msg += "http://forum.primeoj.com/web/topic/info?topicKey=" + topic.getTopicKey() + "\n";
+            msg += "https://forum.primeoj.com/web/topic/info?topicKey=" + topic.getTopicKey() + "\n";
         }
         event.getGroup().sendMessage(msg);
     }

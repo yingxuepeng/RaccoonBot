@@ -9,6 +9,7 @@ import net.mamoe.mirai.event.events.MemberJoinRequestEvent;
 import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
 import net.mamoe.mirai.message.data.PlainText;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -43,7 +44,15 @@ public class GroupJoinService extends BaseService {
         }
     }
 
+    @Async
     public void sendWelcomeMessage(MemberJoinEvent event) {
+        // keep welcome msg after join group action
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        // biz logic
         SolutionEntity solutionEntity = getNewMemberSolutionEntity(event.getMember().getId());
         String title = getMemberTitle(0);
         if (solutionEntity != null) {
@@ -52,7 +61,7 @@ public class GroupJoinService extends BaseService {
         MessageChainBuilder builder = new MessageChainBuilder();
         builder.append(new PlainText("欢迎新" + title + "! "));
         builder.append(new At(event.getMember().getId()));
-        builder.append(new PlainText("\n请熟读群公告规定，并修改群名片为：'{昵称}_{最好的语言}'!然后回答入群五大问题：请回答：地点 学校 工作 语言 特殊xp（必须！）"));
+        builder.append(new PlainText("\n请熟读群公告规定，并修改群名片为：'{昵称}_{最好的语言}'!然后回答入群五大问题：地点 学校 工作 爱好 性癖"));
         miraiBot.getGroup(miraiInfo.getGroupId()).sendMessage(builder.build());
 
 
@@ -60,7 +69,7 @@ public class GroupJoinService extends BaseService {
             return;
         }
         // url
-        String url = "视奸新群友代码地址：\n" + "http://www.primeoj.com/uuid.php?uuid=" + solutionEntity.getSolutionUuid();
+        String url = "视奸新群友代码地址：\n" + "https://www.primeoj.com/uuid.php?uuid=" + solutionEntity.getSolutionUuid();
         miraiBot.getGroup(miraiInfo.getGroupId()).sendMessage(new PlainText(url));
     }
 

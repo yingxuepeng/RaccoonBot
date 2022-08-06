@@ -7,13 +7,18 @@ import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.PlainText;
 import net.mamoe.mirai.message.data.QuoteReply;
+import net.mamoe.mirai.message.data.SingleMessage;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.raccoon.qqbot.data.action.UserAction.Permission.ALL_WELCOME;
 
 public class UserAction {
     private Type type;
     private long senderId;
-    private long targetId;
+
+    private List<Long> targetIdList;
 
     private Permission senderPermission;
     private Permission targetPermission;
@@ -36,23 +41,15 @@ public class UserAction {
         if (event.getMessage().size() < 3) {
             return null;
         }
-        // first is bot
+        // user action
+        UserAction userAction = null;
+        // first should at bot
         At me = (At) event.getMessage().get(1);
         if (me.getTarget() != miraiInfo.getBotId()) {
             return null;
         }
-        // third is target
-        Long targetId = null;
 
-        if (event.getMessage().size() > 3 && (event.getMessage().get(3) instanceof At)) {
-            // 未指定，则为自己
-            At target = (At) event.getMessage().get(3);
-            targetId = target.getTarget();
-        } else {
-            targetId = event.getSender().getId();
-        }
-
-        // action
+        // second is action
         if (!(event.getMessage().get(2) instanceof PlainText)) {
             return null;
         }
@@ -60,8 +57,6 @@ public class UserAction {
         String actionStr = action.getContent().trim().toLowerCase();
 
         Type type = GetType(actionStr);
-        // user action
-        UserAction userAction = null;
         switch (type) {
             case NONE:
                 break;
@@ -91,15 +86,37 @@ public class UserAction {
             default:
                 break;
         }
+
+        // third++ is target
+        List<Long> targetIdList = new ArrayList<>();
+        Long targetId = null;
+
+        if (event.getMessage().size() == 3) {
+            // target is self
+            targetId = event.getSender().getId();
+        } else if (event.getMessage().size() > 3) {
+            // add target id
+            for (int i = 3; i < event.getMessage().size(); i++) {
+                SingleMessage singleMessage = event.getMessage().get(i);
+                if (singleMessage instanceof At) {
+                    At target = (At) singleMessage;
+                    targetId = target.getTarget();
+                }
+            }
+        }
+        if (targetIdList.size() <= 0) {
+            // no target
+            return null;
+        }
+
         if (userAction != null) {
             userAction.type = type;
             userAction.senderId = event.getSender().getId();
-            userAction.targetId = targetId;
+            userAction.targetIdList = targetIdList;
             userAction.senderPermission = GetPermission(event.getSender());
             userAction.targetPermission = GetPermission(event.getGroup().get(targetId));
             userAction.actionStr = actionStr;
         }
-
 
         return userAction;
     }
@@ -214,12 +231,12 @@ public class UserAction {
         this.senderId = senderId;
     }
 
-    public long getTargetId() {
-        return targetId;
+    public List<Long> getTargetIdList() {
+        return targetIdList;
     }
 
-    public void setTargetId(long targetId) {
-        this.targetId = targetId;
+    public void setTargetIdList(List<Long> targetIdList) {
+        this.targetIdList = targetIdList;
     }
 
     public Permission getSenderPermission() {

@@ -12,7 +12,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author pyx
- * @since 2022-05-15
+ * @since 2022-08-06
  */
 @TableName("bot_message")
 public class BotMessageEntity implements Serializable {
@@ -31,6 +31,8 @@ public class BotMessageEntity implements Serializable {
     private String senderNick;
 
     private String content;
+
+    private String msgChainJstr;
 
     private Byte labelCrtype;
 
@@ -91,6 +93,13 @@ public class BotMessageEntity implements Serializable {
 
     public void setContent(String content) {
         this.content = content;
+    }
+    public String getMsgChainJstr() {
+        return msgChainJstr;
+    }
+
+    public void setMsgChainJstr(String msgChainJstr) {
+        this.msgChainJstr = msgChainJstr;
     }
     public Byte getLabelCrtype() {
         return labelCrtype;
@@ -165,6 +174,7 @@ public class BotMessageEntity implements Serializable {
             ", msgId=" + msgId +
             ", senderNick=" + senderNick +
             ", content=" + content +
+            ", msgChainJstr=" + msgChainJstr +
             ", labelCrtype=" + labelCrtype +
             ", labelType=" + labelType +
             ", labelFirst=" + labelFirst +

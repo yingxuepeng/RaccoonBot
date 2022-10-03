@@ -18,6 +18,7 @@ interface MsgBrief {
   labelSecond?: string;
 }
 interface MsgConfig {
+  isWeekend?: boolean;
   isHoliday?: boolean;
 }
 // result
@@ -30,6 +31,7 @@ interface QuotaResult {
 // quota const
 const BASE_QUOTA = 100;
 const MIN_QUOTA = 10;
+const WEEKEND_QUOTA_MULTIPLIER = 2;
 const HOLIDAY_QUOTA_MULTIPLIER = 3;
 
 // classifier const
@@ -61,6 +63,8 @@ function shouldMute(dataStr: string): string {
   }
   if (data.msgConfig.isHoliday) {
     msgQuota *= HOLIDAY_QUOTA_MULTIPLIER;
+  } else if (data.msgConfig.isWeekend) {
+    msgQuota *= WEEKEND_QUOTA_MULTIPLIER;
   }
 
   let msgCnt = 0;

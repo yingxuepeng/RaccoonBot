@@ -18,10 +18,9 @@ public class UserAction {
     private Type type;
     private long senderId;
 
-    private List<Long> targetIdList;
+    private List<AtTarget> targetList;
 
     private Permission senderPermission;
-    private Permission targetPermission;
     private String actionStr;
 
 
@@ -70,17 +69,19 @@ public class UserAction {
             case QUOTA_EXTRALIFE_ADD:
                 userAction = new QuotaExtraLifeAction();
                 break;
+            case CONFIG_HOLIDAY:
+            case CONFIG_WORK:
+                userAction = new HolidayAction();
+                break;
             case MSG_ALL_TOP5:
             case MSG_REPEAT_TOP5:
             case TOPIC_LIST:
-            case CONFIG_HOLIDAY:
-            case CONFIG_WORK:
             case VOTE:
             case VOTE_COUNT:
             case EXECUTION:
                 userAction = new UserAction();
                 break;
-            // 禁言自己
+            // TODO: 禁言自己
             case MUTE_SELF:
                 break;
             default:
@@ -88,23 +89,30 @@ public class UserAction {
         }
 
         // third++ is target
-        List<Long> targetIdList = new ArrayList<>();
-        Long targetId = null;
+        List<AtTarget> targetList = new ArrayList<>();
+
 
         if (event.getMessage().size() == 3) {
             // target is self
-            targetId = event.getSender().getId();
+            AtTarget atTarget = new AtTarget();
+            atTarget.setTargetId(event.getSender().getId());
+            atTarget.setTargetPermission(GetPermission(event.getGroup().get(atTarget.getTargetId())));
+            targetList.add(atTarget);
         } else if (event.getMessage().size() > 3) {
             // add target id
             for (int i = 3; i < event.getMessage().size(); i++) {
                 SingleMessage singleMessage = event.getMessage().get(i);
                 if (singleMessage instanceof At) {
                     At target = (At) singleMessage;
-                    targetId = target.getTarget();
+
+                    AtTarget atTarget = new AtTarget();
+                    atTarget.setTargetId(target.getTarget());
+                    atTarget.setTargetPermission(GetPermission(event.getGroup().get(atTarget.getTargetId())));
+                    targetList.add(atTarget);
                 }
             }
         }
-        if (targetIdList.size() <= 0) {
+        if (targetList.size() <= 0) {
             // no target
             return null;
         }
@@ -112,9 +120,8 @@ public class UserAction {
         if (userAction != null) {
             userAction.type = type;
             userAction.senderId = event.getSender().getId();
-            userAction.targetIdList = targetIdList;
+            userAction.targetList = targetList;
             userAction.senderPermission = GetPermission(event.getSender());
-            userAction.targetPermission = GetPermission(event.getGroup().get(targetId));
             userAction.actionStr = actionStr;
         }
 
@@ -231,12 +238,12 @@ public class UserAction {
         this.senderId = senderId;
     }
 
-    public List<Long> getTargetIdList() {
-        return targetIdList;
+    public List<AtTarget> getTargetList() {
+        return targetList;
     }
 
-    public void setTargetIdList(List<Long> targetIdList) {
-        this.targetIdList = targetIdList;
+    public void setTargetList(List<AtTarget> targetList) {
+        this.targetList = targetList;
     }
 
     public Permission getSenderPermission() {
@@ -245,14 +252,6 @@ public class UserAction {
 
     public void setSenderPermission(Permission senderPermission) {
         this.senderPermission = senderPermission;
-    }
-
-    public Permission getTargetPermission() {
-        return targetPermission;
-    }
-
-    public void setTargetPermission(Permission targetPermission) {
-        this.targetPermission = targetPermission;
     }
 
     public String getActionStr() {

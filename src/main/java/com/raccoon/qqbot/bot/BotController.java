@@ -111,7 +111,7 @@ public class BotController {
                     break;
                 case CONFIG_HOLIDAY:
                 case CONFIG_WORK:
-                    groupMsgService.setIsHoliday(event, userAction);
+                    groupMsgService.setIsHoliday(event, (HolidayAction) userAction);
                     break;
                 case VOTE:
                     groupMsgService.vote(event, userAction);

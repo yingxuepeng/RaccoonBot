@@ -63,7 +63,7 @@ public class GroupMsgService extends BaseService {
     }
 
     public void showQuota(GroupMessageEvent event, QuotaShowAction userAction) {
-        Long targetId = userAction.getTargetIdList().get(0);
+        Long targetId = userAction.getTargetList().get(0).getTargetId();
         ScriptResultVo info = getMemberMuteInfo(targetId);
         List<BotAdminActionEntity> actionEntityList = botAdminActionDao.selectByMemberScriptStatus(targetId, 1L, BotAdminActionConsts.STATUS_NORMAL);
         QuotaShowAction.Stat stat = userAction.getStat(actionEntityList);
@@ -98,7 +98,7 @@ public class GroupMsgService extends BaseService {
     }
 
     public void changeQuotaBatch(GroupMessageEvent event, QuotaChangeAction userAction) {
-        userAction.getTargetIdList().forEach(targetId -> changeQuotaSingle(event, userAction, targetId));
+        userAction.getTargetList().forEach(target -> changeQuotaSingle(event, userAction, target.getTargetId()));
     }
 
     private void changeQuotaSingle(GroupMessageEvent event, QuotaChangeAction userAction, long targetId) {
@@ -171,7 +171,7 @@ public class GroupMsgService extends BaseService {
 
 
     public void addExtraLife(GroupMessageEvent event, QuotaExtraLifeAction userAction) {
-        Long targetId = userAction.getTargetIdList().get(0);
+        Long targetId = userAction.getTargetList().get(0).getTargetId();
         BotAdminActionEntity botAdminActionEntity = botAdminActionDao.selectByAdminMemberStatus(userAction.getSenderId(), targetId,
                 BotAdminActionConsts.STATUS_NORMAL, BotAdminActionConsts.TYPE_QUOTA_EXTRA);
         // quota step
@@ -254,7 +254,20 @@ public class GroupMsgService extends BaseService {
 
         {
             MsgConfig msgConfig = new MsgConfig();
-            msgConfig.setIsHoliday(redisService.getIsHoliday());
+            msgConfig.setIsWeekend(false);
+            msgConfig.setIsHoliday(false);
+
+            Boolean isHoliday = redisService.getIsHoliday();
+            if (isHoliday != null) {
+                msgConfig.setIsHoliday(isHoliday);
+            } else {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(new Date());
+                if (calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY ||
+                        calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+                    msgConfig.setIsWeekend(true);
+                }
+            }
             data.put("msgConfig", msgConfig);
         }
 
@@ -454,13 +467,13 @@ public class GroupMsgService extends BaseService {
         event.getGroup().sendMessage(new PlainText("主题 “" + botGroupTopicEntity.getTitle()) + "” 已创建");
     }
 
-    public void setIsHoliday(GroupMessageEvent event, UserAction action) {
+    public void setIsHoliday(GroupMessageEvent event, HolidayAction action) {
         if (action.getType() == UserAction.Type.CONFIG_HOLIDAY) {
-            redisService.setIsHoliday(true);
-            event.getGroup().sendMessage("过节啦~~~");
+            redisService.setIsHoliday(true, action.getDays());
+            event.getGroup().sendMessage("过节" + action.getDays() + "天啦~~~");
         } else if (action.getType() == UserAction.Type.CONFIG_WORK) {
-            redisService.setIsHoliday(false);
-            event.getGroup().sendMessage("上班嘞...");
+            redisService.setIsHoliday(false, action.getDays());
+            event.getGroup().sendMessage("上班" + action.getDays() + "天嘞...");
         }
     }
 
@@ -471,7 +484,7 @@ public class GroupMsgService extends BaseService {
 
     public void vote(GroupMessageEvent event, UserAction userAction) {
         Group group = event.getGroup();
-        Long targetId = userAction.getTargetIdList().get(0);
+        Long targetId = userAction.getTargetList().get(0).getTargetId();
 
         NormalMember target = group.get(targetId);
         if (target.getPermission().equals(MemberPermission.ADMINISTRATOR) || target.getPermission().equals(MemberPermission.OWNER)) {
@@ -514,7 +527,7 @@ public class GroupMsgService extends BaseService {
      * @param userAction
      */
     public void showVotes(GroupMessageEvent event, UserAction userAction) {
-        Long targetId = userAction.getTargetIdList().get(0);
+        Long targetId = userAction.getTargetList().get(0).getTargetId();
         Member target = event.getGroup().get(targetId);
         int votes = VOTE_MAP.getOrDefault(target, 0);
         event.getGroup().sendMessage("该用户被投了" + votes + "票.");
@@ -618,7 +631,7 @@ public class GroupMsgService extends BaseService {
      */
     public void execute(GroupMessageEvent event, UserAction userAction) {
         Group group = event.getGroup();
-        Long targetId = userAction.getTargetIdList().get(0);
+        Long targetId = userAction.getTargetList().get(0).getTargetId();
         Member target = group.get(targetId);
         execute0(group, target);
     }

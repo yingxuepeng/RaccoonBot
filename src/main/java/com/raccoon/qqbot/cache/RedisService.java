@@ -48,15 +48,15 @@ public class RedisService {
         }
     }
 
-    public void setIsHoliday(boolean isHoliday) {
-        long remainSecond = TimeUtils.GetTodayRemainSecond();
+    public void setIsHoliday(boolean isHoliday, int days) {
+        long remainSecond = TimeUtils.GetTodayRemainSecond() + (days - 1) * 86400;
         redisTemplate.opsForValue().set(ISHOLIDAY_KEY, isHoliday + "", remainSecond, TimeUnit.SECONDS);
     }
 
-    public boolean getIsHoliday() {
+    public Boolean getIsHoliday() {
         String isHolidayStr = redisTemplate.opsForValue().get(ISHOLIDAY_KEY);
         if (isHolidayStr == null) {
-            return false;
+            return null;
         }
         return Boolean.parseBoolean(isHolidayStr);
     }

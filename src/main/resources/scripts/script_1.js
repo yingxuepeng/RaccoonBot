@@ -2,6 +2,7 @@
 // quota const
 var BASE_QUOTA = 100;
 var MIN_QUOTA = 10;
+var WEEKEND_QUOTA_MULTIPLIER = 2;
 var HOLIDAY_QUOTA_MULTIPLIER = 3;
 // classifier const
 var CLASS_REPEAT = '复读';
@@ -29,6 +30,9 @@ function shouldMute(dataStr) {
     }
     if (data.msgConfig.isHoliday) {
         msgQuota *= HOLIDAY_QUOTA_MULTIPLIER;
+    }
+    else if (data.msgConfig.isWeekend) {
+        msgQuota *= WEEKEND_QUOTA_MULTIPLIER;
     }
     var msgCnt = 0;
     for (var briefIdx = 0; briefIdx < data.msgBriefList.length; briefIdx++) {

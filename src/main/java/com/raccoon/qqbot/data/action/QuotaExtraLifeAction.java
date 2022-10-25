@@ -2,7 +2,7 @@ package com.raccoon.qqbot.data.action;
 
 public class QuotaExtraLifeAction extends UserAction {
     public int getMaxLifeCnt() {
-        if (!getSenderPermission().lessThan(Permission.ADMINISTRATOR)) {
+        if (!getSenderPermission().lessThan(Permission.ADMIN)) {
             return 3;
         } else if (getSenderPermission() == Permission.CODING_EMPEROR) {
             return 2;

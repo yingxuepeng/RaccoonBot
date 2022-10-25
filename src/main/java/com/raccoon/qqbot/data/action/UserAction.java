@@ -12,10 +12,8 @@ import net.mamoe.mirai.message.data.SingleMessage;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.raccoon.qqbot.data.action.UserAction.Permission.ALL_WELCOME;
-
 public class UserAction {
-    private Type type;
+    private ActionType type;
     private long senderId;
 
     private List<AtTarget> targetList;
@@ -55,7 +53,7 @@ public class UserAction {
         PlainText action = (PlainText) event.getMessage().get(2);
         String actionStr = action.getContent().trim().toLowerCase();
 
-        Type type = GetType(actionStr);
+        ActionType type = GetType(actionStr);
         switch (type) {
             case NONE:
                 break;
@@ -75,14 +73,12 @@ public class UserAction {
                 break;
             case MSG_ALL_TOP5:
             case MSG_REPEAT_TOP5:
+            case SMACK:
             case TOPIC_LIST:
             case VOTE:
             case VOTE_COUNT:
             case EXECUTION:
                 userAction = new UserAction();
-                break;
-            // TODO: 禁言自己
-            case MUTE_SELF:
                 break;
             default:
                 break;
@@ -150,7 +146,7 @@ public class UserAction {
         }
         PlainText action = (PlainText) event.getMessage().get(3);
         String actionStr = action.getContent().trim().toLowerCase();
-        Type type = GetType(actionStr);
+        ActionType type = GetType(actionStr);
 
         long targetId = quoteReply.getSource().getIds()[0];
         // user action
@@ -180,12 +176,12 @@ public class UserAction {
      * @param actionStr
      * @return
      */
-    public static Type GetType(String actionStr) {
+    public static ActionType GetType(String actionStr) {
         // get action type
-        Type type = Type.NONE;
+        ActionType type = ActionType.NONE;
         //  equal first
-        for (Type value : Type.values()) {
-            if (value.keywordMatchType != KeywordMatchType.EQUAL) {
+        for (ActionType value : ActionType.values()) {
+            if (value.getKeywordMatchType() != KeywordMatchType.EQUAL) {
                 continue;
             }
             if (actionStr.equals(value.getKeyword())) {
@@ -194,9 +190,9 @@ public class UserAction {
             }
         }
         // is not then  start with
-        if (type == Type.NONE) {
-            for (Type value : Type.values()) {
-                if (value.keywordMatchType != KeywordMatchType.START_WITH) {
+        if (type == ActionType.NONE) {
+            for (ActionType value : ActionType.values()) {
+                if (value.getKeywordMatchType() != KeywordMatchType.START_WITH) {
                     continue;
                 }
                 if (actionStr.startsWith(value.getKeyword())) {
@@ -211,7 +207,7 @@ public class UserAction {
     public static Permission GetPermission(Member member) {
         Permission memberPermission = Permission.MEMBER;
         if (member.getPermission() == MemberPermission.ADMINISTRATOR) {
-            memberPermission = Permission.ADMINISTRATOR;
+            memberPermission = Permission.ADMIN;
         } else if (member.getPermission() == MemberPermission.OWNER) {
             memberPermission = Permission.OWNER;
         } else if (member.getSpecialTitle().contains("\uD83D\uDC51")) {
@@ -222,11 +218,11 @@ public class UserAction {
         return memberPermission;
     }
 
-    public Type getType() {
+    public ActionType getType() {
         return type;
     }
 
-    public void setType(Type type) {
+    public void setType(ActionType type) {
         this.type = type;
     }
 
@@ -266,10 +262,10 @@ public class UserAction {
         MEMBER(0),
         CODING_TIGER(1),
         CODING_EMPEROR(2),
-        ADMINISTRATOR(3),
+        ADMIN(3),
         OWNER(4);
 
-        final static Permission[] ALL_WELCOME = new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR,
+        final static Permission[] ALL_WELCOME = new Permission[]{Permission.OWNER, Permission.ADMIN, Permission.CODING_EMPEROR,
                 Permission.CODING_TIGER, Permission.MEMBER};
 
         private int privilege;
@@ -291,100 +287,4 @@ public class UserAction {
         }
     }
 
-    public enum Type {
-        NONE(0, null, KeywordMatchType.NONE, null),
-        QUOTA_SHOW(1, "看", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
-                Permission.CODING_EMPEROR, Permission.CODING_TIGER, Permission.MEMBER}),
-        QUOTA_INCREASE(2, "夸", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
-                Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
-        QUOTA_DECREASE(3, "干", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
-                Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
-        QUOTA_EXTRALIFE_ADD(4, "续", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
-                Permission.CODING_EMPEROR, Permission.CODING_TIGER}),
-
-        MSG_ALL_TOP5(5, "matop5", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
-                Permission.CODING_EMPEROR}),
-        MSG_REPEAT_TOP5(6, "mrtop5", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR,
-                Permission.CODING_EMPEROR}),
-        // 禁言自己
-        MUTE_SELF(7, "怼我", KeywordMatchType.EQUAL, new Permission[]{Permission.CODING_EMPEROR, Permission.CODING_TIGER, Permission.MEMBER}),
-
-        TOPIC_CREATE(8, "mark", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
-        TOPIC_LIST(9, "marklist", KeywordMatchType.EQUAL, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR,
-                Permission.CODING_TIGER, Permission.MEMBER}),
-
-
-        // holiday
-        CONFIG_HOLIDAY(10, "过节", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR}),
-        CONFIG_WORK(11, "上班", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR}),
-        // 上票
-        VOTE(12, "投", KeywordMatchType.START_WITH, ALL_WELCOME),
-        // 处刑
-        EXECUTION(13, "执行", KeywordMatchType.START_WITH, new Permission[]{Permission.OWNER, Permission.ADMINISTRATOR, Permission.CODING_EMPEROR}),
-        // 计算票数
-        VOTE_COUNT(14, "计票", KeywordMatchType.START_WITH, ALL_WELCOME),
-        ;
-
-        private int type;
-        private KeywordMatchType keywordMatchType;
-        private Permission[] permissionArray;
-        private String keyword;
-
-        Type(int type, String keyword, KeywordMatchType keywordMatchType, Permission[] permissionArray) {
-            this.type = type;
-            this.keyword = keyword;
-            this.keywordMatchType = keywordMatchType;
-            this.permissionArray = permissionArray;
-        }
-
-        public int getType() {
-            return type;
-        }
-
-        public void setType(int type) {
-            this.type = type;
-        }
-
-        public Permission[] getPermissionArray() {
-            return permissionArray;
-        }
-
-        public void setPermissionArray(Permission[] permissionArray) {
-            this.permissionArray = permissionArray;
-        }
-
-        public String getKeyword() {
-            return keyword;
-        }
-
-        public void setKeyword(String keyword) {
-            this.keyword = keyword;
-        }
-
-        public boolean hasPermission(Member member) {
-            Permission memberPermission = GetPermission(member);
-            for (Permission permission : permissionArray) {
-                if (permission == memberPermission) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static Type GetType(int type) {
-            for (Type t : Type.values()) {
-                if (t.getType() == type) {
-                    return t;
-                }
-            }
-            return Type.NONE;
-        }
-    }
-
-    private enum KeywordMatchType {
-        NONE,
-        EQUAL,
-        START_WITH,
-        REGEX,
-    }
 }

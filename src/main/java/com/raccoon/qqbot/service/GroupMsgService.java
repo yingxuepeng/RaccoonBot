@@ -115,7 +115,7 @@ public class GroupMsgService extends BaseService {
             deltaQuotaCnt = Math.min(3, deltaQuotaCnt);
         }
 
-        if (userAction.getType() == UserAction.Type.QUOTA_DECREASE) {
+        if (userAction.getType() == ActionType.QUOTA_DECREASE) {
             deltaQuotaCnt = -deltaQuotaCnt;
         }
         int curQuotaCnt = 0;
@@ -454,6 +454,31 @@ public class GroupMsgService extends BaseService {
         botMessageDao.updateById(entity);
     }
 
+    public void smackMember(GroupMessageEvent event, UserAction userAction) {
+        double hitSelfProb = getSmackProb(userAction.getSenderPermission());
+        AtTarget target = userAction.getTargetList().get(0);
+        double hitTargetProb = getSmackProb(target.getTargetPermission());
+        if (hitTargetProb == 0 && hitSelfProb == 0) {
+            event.getGroup().sendMessage("狗咬狗，管不来~");
+            return;
+        }
+
+
+    }
+
+    private double getSmackProb(UserAction.Permission permission) {
+        if (permission == UserAction.Permission.OWNER || permission == UserAction.Permission.ADMIN) {
+            return 0;
+        } else if (permission == UserAction.Permission.CODING_EMPEROR) {
+            return 0.3;
+        } else if (permission == UserAction.Permission.CODING_TIGER) {
+            return 0.6;
+        } else if (permission == UserAction.Permission.MEMBER) {
+            return 0.9;
+        }
+        return 1;
+    }
+
     public void createTopic(GroupMessageEvent event, QuoteAction action) {
         int msgId = action.getQuoteReply().getSource().getIds()[0];
         BotMessageEntity messageEntity = botMessageDao.selectByMsgId(msgId);
@@ -468,10 +493,10 @@ public class GroupMsgService extends BaseService {
     }
 
     public void setIsHoliday(GroupMessageEvent event, HolidayAction action) {
-        if (action.getType() == UserAction.Type.CONFIG_HOLIDAY) {
+        if (action.getType() == ActionType.CONFIG_HOLIDAY) {
             redisService.setIsHoliday(true, action.getDays());
             event.getGroup().sendMessage("过节" + action.getDays() + "天啦~~~");
-        } else if (action.getType() == UserAction.Type.CONFIG_WORK) {
+        } else if (action.getType() == ActionType.CONFIG_WORK) {
             redisService.setIsHoliday(false, action.getDays());
             event.getGroup().sendMessage("上班" + action.getDays() + "天嘞...");
         }

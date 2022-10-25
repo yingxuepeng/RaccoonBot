@@ -6,7 +6,7 @@ public class QuotaChangeAction extends UserAction {
     public static final Range TigerRange = new Range(-1, 2);
 
     public Range getRange() {
-        if (!getSenderPermission().lessThan(Permission.ADMINISTRATOR)) {
+        if (!getSenderPermission().lessThan(Permission.ADMIN)) {
             return AdminRange;
         } else if (getSenderPermission() == Permission.CODING_EMPEROR) {
             return EmperorRange;

@@ -1,6 +1,6 @@
 package com.raccoon.qqbot.config;
 
-import com.raccoon.qqbot.data.action.UserAction;
+import com.raccoon.qqbot.data.action.ActionType;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.BotFactory;
 import net.mamoe.mirai.utils.BotConfiguration;
@@ -41,7 +41,7 @@ public class MiraiConfig {
         miraiInfo.setBotId(Long.parseLong(loginQid));
         miraiInfo.setGroupId(Long.parseLong(groupId));
         // set valid action type list
-        List<UserAction.Type> typeList = new ArrayList<>();
+        List<ActionType> typeList = new ArrayList<>();
         String[] typePeroidStr = validActionTypeList.split(",");
         for (String peroidStr : typePeroidStr) {
             String[] rangeStr = peroidStr.trim().split("-");
@@ -49,13 +49,13 @@ public class MiraiConfig {
                 if (rangeStr.length == 1) {
                     // ...,5,...
                     int type = Integer.parseInt(rangeStr[0].trim());
-                    typeList.add(UserAction.Type.GetType(type));
+                    typeList.add(ActionType.GetType(type));
                 } else if (rangeStr.length == 2) {
                     // ...,1-10,...
                     int beginType = Integer.parseInt(rangeStr[0].trim());
                     int endType = Integer.parseInt(rangeStr[1].trim());
                     for (int type = beginType; type <= endType; type++) {
-                        typeList.add(UserAction.Type.GetType(type));
+                        typeList.add(ActionType.GetType(type));
                     }
                 }
             } catch (NumberFormatException e) {
@@ -80,7 +80,7 @@ public class MiraiConfig {
         private Long botId;
         private Long groupId;
 
-        private List<UserAction.Type> valideActionTypeList;
+        private List<ActionType> valideActionTypeList;
 
         public Long getBotId() {
             return botId;
@@ -98,11 +98,11 @@ public class MiraiConfig {
             this.groupId = groupId;
         }
 
-        public List<UserAction.Type> getValideActionTypeList() {
+        public List<ActionType> getValideActionTypeList() {
             return valideActionTypeList;
         }
 
-        public void setValideActionTypeList(List<UserAction.Type> valideActionTypeList) {
+        public void setValideActionTypeList(List<ActionType> valideActionTypeList) {
             this.valideActionTypeList = valideActionTypeList;
         }
     }

@@ -10,14 +10,14 @@ public class HolidayAction extends UserAction {
     public int getDays() {
         int days = 1;
         try {
-            if (getType() == Type.CONFIG_HOLIDAY) {
+            if (getType() == ActionType.CONFIG_HOLIDAY) {
                 Matcher matcher = holidayPattern.matcher(getActionStr());
                 if (matcher.find()) {
                     String dayStr = matcher.group(1);
                     days = Integer.parseInt(dayStr);
                 }
 
-            } else if (getType() == Type.CONFIG_WORK) {
+            } else if (getType() == ActionType.CONFIG_WORK) {
                 Matcher matcher = holidayPattern.matcher(getActionStr());
                 if (matcher.find()) {
                     String dayStr = matcher.group(1);

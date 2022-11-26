@@ -16,6 +16,9 @@ import org.springframework.stereotype.Service;
 public class GroupJoinService extends BaseService {
 
     public void handleJoinRequest(MemberJoinRequestEvent event) {
+        if (event.getInvitor() != null) {
+            return;
+        }
         String[] split = event.getMessage().trim().split("答案：");
         if (split.length < 2) {
             event.reject(false, "bot邀请码没查到,#开头转人工");

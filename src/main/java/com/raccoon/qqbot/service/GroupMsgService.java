@@ -408,7 +408,7 @@ public class GroupMsgService extends BaseService {
             MessageChainBuilder builder = new MessageChainBuilder();
             builder.append(new At(memberId));
             builder.append(new PlainText("今日发言次数为：" + info.getMsgCnt() + "/" + info.getMsgQuota() + "，早点睡觉觉吧~\n"));
-            builder.append(Image.fromId("{1FC3D44A-6F98-6E13-2025-756013B51688}.jpg"));
+            builder.append(Image.fromId("{0C17E845-38EA-CA36-04C4-B92A433FBDB8}.jpg"));
             event.getGroup().sendMessage(builder.build());
         }
     }

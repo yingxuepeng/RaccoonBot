@@ -25,8 +25,7 @@ public class MiraiConfig {
 
     @Bean("miraiBot")
     public Bot getMiraiBot() {
-        Bot miraiBot = BotFactory.INSTANCE.newBot(Long.parseLong(loginQid),"qcm244060209", botConfiguration -> {
-//        Bot miraiBot = BotFactory.INSTANCE.newBot(Long.parseLong(loginQid), HexStringToByteArray(loginPwdMd5), botConfiguration -> {
+        Bot miraiBot = BotFactory.INSTANCE.newBot(Long.parseLong(loginQid), HexStringToByteArray(loginPwdMd5), botConfiguration -> {
             botConfiguration.setProtocol(BotConfiguration.MiraiProtocol.MACOS);
             botConfiguration.setAutoReconnectOnForceOffline(true);
             botConfiguration.setReconnectionRetryTimes(Integer.MAX_VALUE);

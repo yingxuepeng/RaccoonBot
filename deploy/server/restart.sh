@@ -13,6 +13,7 @@ if test -f "$FILE"; then
 fi
 sudo rm -f pause
 sleep 3s
-sudo nohup java -jar qqbot-2.0.0-SNAPSHOT.jar --spring.profiles.active=prod > /dev/null & echo $! > pid &
+screen
+sudo nohup java -jar /home/raccoon_bot/qqbot-2.0.0-SNAPSHOT.jar --spring.profiles.active=prod > /dev/null & echo $! > /home/raccoon_bot/pid &
 sleep 1s
 echo "`cat pid`"

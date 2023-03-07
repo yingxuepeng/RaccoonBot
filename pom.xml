@@ -130,28 +130,28 @@
             <version>1.6.4</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/net.mamoe/mirai-core-all -->
+        <!-- https://mvnrepository.com/artifact/net.mamoe/mirai-core-jvm -->
         <dependency>
             <groupId>net.mamoe</groupId>
             <artifactId>mirai-core-jvm</artifactId>
-            <version>2.13.0-RC2</version>
+            <version>2.14.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>net.mamoe</groupId>
-            <artifactId>mirai-core</artifactId>
-            <version>2.13.0-RC2</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.jetbrains.kotlinx</groupId>
-                    <artifactId>kotlinx-coroutines-jdk8</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jetbrains.kotlinx</groupId>
-                    <artifactId>kotlinx-coroutines-core-jvm</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>net.mamoe</groupId>-->
+<!--            <artifactId>mirai-core-jvm</artifactId>-->
+<!--            <version>2.14.0</version>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>org.jetbrains.kotlinx</groupId>-->
+<!--                    <artifactId>kotlinx-coroutines-jdk8</artifactId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    <groupId>org.jetbrains.kotlinx</groupId>-->
+<!--                    <artifactId>kotlinx-coroutines-core-jvm</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>com.tencentcloudapi</groupId>

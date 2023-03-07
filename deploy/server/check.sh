@@ -15,6 +15,7 @@ if test -f "$FILE"; then
     else
       rm -f pid
       touch check
+      screen
       sudo nohup java -jar /home/raccoon_bot/qqbot-2.0.0-SNAPSHOT.jar --spring.profiles.active=prod > /dev/null & echo $! > /home/raccoon_bot/pid &
     fi
   fi
